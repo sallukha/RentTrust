@@ -6,9 +6,7 @@ import authRoutes from './routes/auth.routes.js'
 import userRoutes from './routes/user.routes.js'
 import { errorHandler } from './middlewares/error.middleware.js'
 import { notFound } from './middlewares/notFound.middleware.js'
-
 export const app = express()
-
 app.use(helmet())
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json({ limit: '10kb' }))

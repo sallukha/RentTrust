@@ -10,7 +10,6 @@ export const signupUser = asyncHandler(async (req, res) => {
   const user = await createAccount({ name, email, password, role: 'user' })
   sendAuthResponse(res, 201, user)
 })
-
 export const signupAdmin = asyncHandler(async (req, res) => {
   const { name, email, password, adminSecret } = req.body
 
