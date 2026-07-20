@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { env } from '../config/env.js'
-import { User } from '../models/user.model.js'
+import { User } from '../modules/user/models/user.model.js'
 import { ApiError } from '../utils/apiError.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
 

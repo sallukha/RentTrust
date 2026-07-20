@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: renttrust_server
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=development
+      - MONGO_URI=mongodb://mongodb:27017/trustcore
+      - JWT_SECRET=trustcore-super-secret-jwt-key
+      - JWT_EXPIRES_IN=7d
+      - ADMIN_SIGNUP_SECRET=trustcore-admin-secret
+    volumes:
+      - ./server/src:/app/src
+    depends_on:
+      - mongodb
+    networks:
+      - renttrust_net
+
+  mongodb:
+    image: mongo:7.0
+    container_name: renttrust_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - renttrust_net
+
+volumes:
+  mongo_data:
+
+networks:
+  renttrust_net:
+    driver: bridge
