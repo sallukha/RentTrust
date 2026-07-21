@@ -1,22 +1,35 @@
+import crypto from 'crypto'
 import { User } from '../users/user.model.js'
 import { ApiError } from '../../shared/utils/apiError.js'
 import { createToken } from '../../shared/utils/jwt.js'
-import { isValidAuthRole } from './auth.model.js'
-import crypto from 'crypto'
+import { buildIdentityLookup, normalizeEmail, normalizePhone } from './auth.policy.js'
+import { validateLoginPayload, validateRegisterPayload } from './auth.validators.js'
 
-export const loginUser = async ({ email, phone, role, otp }) => {
-    const normalizedEmail = normalizeEmail(email)
-    const normalizedPhone = normalizePhone(phone)
+export const registerUser = async (payload) => {
+    const { name, email, phone, role } = validateRegisterPayload(payload)
 
-    if (!normalizedEmail && !normalizedPhone) {
-        throw new ApiError(400, 'Email or phone is required')
+    const existingUser = await User.findOne(buildIdentityLookup({ email, phone, role }))
+
+    if (existingUser) {
+        throw new ApiError(409, 'Account already exists')
     }
 
-    if (!isValidAuthRole(role)) {
-        throw new ApiError(400, 'Invalid role type')
-    }
+    const user = await User.create({
+        name,
+        email: email || undefined,
+        phone: phone || undefined,
+        role,
+    })
 
-    const user = await User.findOne(buildLookupQuery({ email: normalizedEmail, phone: normalizedPhone, role })).select(
+    return {
+        user,
+    }
+}
+
+export const loginUser = async (payload) => {
+    const { email, phone, role, otp } = validateLoginPayload(payload)
+
+    const user = await User.findOne(buildIdentityLookup({ email, phone, role })).select(
         '+loginOtpHash +loginOtpExpiresAt'
     )
 
@@ -57,35 +70,6 @@ export const loginUser = async ({ email, phone, role, otp }) => {
     }
 }
 
-const buildLookupQuery = ({ email, phone, role }) => {
-    const query = { role }
-
-    if (email && phone) {
-        query.$or = [{ email }, { phone }]
-        return query
-    }
-
-    if (email) {
-        query.email = email
-        return query
-    }
-
-    query.phone = phone
-    return query
-}
-
 const generateLoginOtp = () => {
     return crypto.randomInt(100000, 1000000).toString()
-}
-
-const normalizeEmail = (value) => {
-    if (!value) return ''
-
-    return String(value).trim().toLowerCase()
-}
-
-const normalizePhone = (value) => {
-    if (!value) return ''
-
-    return String(value).trim()
 }

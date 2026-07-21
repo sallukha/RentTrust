@@ -1,9 +1,28 @@
 import { asyncHandler } from '../../shared/utils/asyncHandler.js'
 import { env } from '../../shared/config/env.js'
-import { loginUser } from './auth.service.js'
+import { loginUser, registerUser } from './auth.service.js'
+
+const setAuthCookie = (res, token) => {
+    res.cookie('token', token, {
+        httpOnly: true,
+        secure: env.nodeEnv === 'production',
+        sameSite: env.nodeEnv === 'production' ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+    })
+}
+
+export const register = asyncHandler(async (req, res) => {
+    const { user } = await registerUser(req.body)
+
+    res.status(201).json({
+        success: true,
+        data: {
+            user: user.toSafeObject(),
+        },
+    })
+})
 
 export const login = asyncHandler(async (req, res) => {
-
     const { user, token, requiresOtpVerification, otp } = await loginUser(req.body)
 
     if (requiresOtpVerification) {
@@ -17,12 +36,7 @@ export const login = asyncHandler(async (req, res) => {
         })
     }
 
-    res.cookie('token', token, {
-        httpOnly: true,
-        secure: env.nodeEnv === 'production',
-        sameSite: env.nodeEnv === 'production' ? 'none' : 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-    })
+    setAuthCookie(res, token)
 
     res.status(200).json({
         success: true,
