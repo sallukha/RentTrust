@@ -4,6 +4,7 @@ import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
 import authRoutes from './modules/auth/routes/auth.routes.js'
 import userRoutes from './modules/user/routes/user.routes.js'
+import tenantRoutes from './modules/user/tenant/routes/tenant.routes.js'
 import { errorHandler } from './middlewares/error.middleware.js'
 import { notFound } from './middlewares/notFound.middleware.js'
 export const app = express()
@@ -21,6 +22,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/tenant', tenantRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
