@@ -1,11 +1,13 @@
 # Booking Module (`server/src/modules/booking`)
 
 ## Overview
+
 The **Booking Module** manages property viewing appointments and initial rental application requests placed by prospective tenants. It enables scheduling, landlord approvals, schedule conflicts check, and booking status tracking.
 
 ---
 
 ## Folder Structure (Modular MVC)
+
 ```text
 server/src/modules/booking/
 ├── controllers/
@@ -22,6 +24,7 @@ server/src/modules/booking/
 ---
 
 ## Key Features & Responsibilities
+
 1. **Create Booking Request (`POST /api/bookings`)**:
    - Tenant selects property and requested date/time slot for property viewing or rental application.
 2. **Get User Bookings (`GET /api/bookings`)**:
@@ -35,6 +38,7 @@ server/src/modules/booking/
 ---
 
 ## Data Model Schema (`booking.model.js`)
+
 ```javascript
 {
   propertyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Property', required: true },
@@ -51,5 +55,6 @@ server/src/modules/booking/
 ---
 
 ## Business Rules & Workflow
+
 - Booking cannot overlap with existing confirmed slots for the same property.
 - When status changes to `confirmed`, send automated notification to tenant.

@@ -7,6 +7,7 @@ import userRoutes from './modules/user/routes/user.routes.js'
 import { errorHandler } from './middlewares/error.middleware.js'
 import { notFound } from './middlewares/notFound.middleware.js'
 import ownerRoutes from './modules/dashboard/owner/routes/owner.routes.js'
+import invoiceRoutes from "./modules/invoice/routes/Invoice.routes.js"
 export const app = express()
 app.use(helmet())
 app.use(cors({ origin: true, credentials: true }))
@@ -19,10 +20,9 @@ app.get('/api/health', (req, res) => {
     service: 'trustcore-rental-marketplace-api',
   })
 })
-
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/owner', ownerRoutes)
-
+app.use("/api/invoices", invoiceRoutes)
 app.use(notFound)
 app.use(errorHandler)

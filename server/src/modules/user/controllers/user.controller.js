@@ -3,7 +3,7 @@ import { asyncHandler } from '../../../utils/asyncHandler.js'
 
 export const getAllUsers = asyncHandler(async (req, res) => {
   const users = await User.find().sort({ createdAt: -1 })
-
+   
   res.status(200).json({
     success: true,
     count: users.length,

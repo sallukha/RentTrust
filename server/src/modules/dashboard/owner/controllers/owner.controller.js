@@ -30,7 +30,6 @@ export const getOwnerDashboard = async (req, res) => {
                 $match: {
                     owner: ownerId,
                     status: "SUCCESS",
-
                 },
             },
             {
@@ -42,7 +41,6 @@ export const getOwnerDashboard = async (req, res) => {
                 }
             }
         ])
-
         const monthlyRevenue =
             revenue.length > 0 ? revenue[0].totalRevenue : 0;
 
