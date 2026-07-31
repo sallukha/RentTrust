@@ -7,11 +7,8 @@ import {
     cancelBooking
 } from '../controllers/booking.controller.js';
 import authMiddleware from '../../../middlewares/auth.middleware.js';  
-
 const router = express.Router();
-
 router.use(authMiddleware); // protects all booking routes below
-
 router.post('/', createBooking);
 router.get('/', getBookings);
 router.get('/:id', getBookingById);
