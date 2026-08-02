@@ -7,7 +7,7 @@ import {
   notifyContractorAssigned
 } from '../services/maintenance.service.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js'; // shared utils: server/src/utils/asyncHandler.js
-import { ApiError } from '../../../utils/ApiError.js'; // shared utils: server/src/utils/ApiError.js
+import { ApiError } from '../../../utils/apiError.js'; // shared utils: server/src/utils/apiError.js
 import { uploadOnCloudinary } from '../../../utils/cloudinary.util.js'; // shared utils
 
 // POST /api/maintenance - tenant reports an issue with description and photos

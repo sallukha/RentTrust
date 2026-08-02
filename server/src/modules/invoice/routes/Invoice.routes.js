@@ -6,10 +6,10 @@ import {
     updateInvoiceStatus,
     downloadInvoicePdf
 } from '../controllers/invoice.controller.js';
-import authMiddleware from '../../auth/middlewares/auth.middleware.js';
+import { protect } from '../../../middlewares/auth.middleware.js';
 
 const router = express.Router();
-router.use(authMiddleware);
+router.use(protect);
 router.get('/', listInvoices);
 router.get('/:id', getInvoiceById);
 router.post('/generate', generateInvoice);

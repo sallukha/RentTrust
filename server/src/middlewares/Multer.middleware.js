@@ -1,8 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-
-// Temporary local folder before files go to Cloudinary
+ 
 const tempDir = './public/temp';
 
 if (!fs.existsSync(tempDir)) {
@@ -19,7 +18,7 @@ const storage = multer.diskStorage({
   }
 });
 
-// Only allow common image formats
+ 
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 

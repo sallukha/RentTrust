@@ -1,5 +1,5 @@
 import fs from 'fs';
-import cloudinary from '../config/Cloudinary.config';
+import cloudinary from '../config/Cloudinary.config.js';
 
 /**
  * Uploads a local file (saved by Multer) to Cloudinary,

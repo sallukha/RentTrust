@@ -1,8 +1,8 @@
  import cron from 'node-cron';
 import PDFDocument from 'pdfkit';
 import Invoice from '../models/invoice.model.js';
-import Lease from '../../lease/models/lease.model.js'; // adjust path to your actual Lease module
-import { ApiError } from '../utils/ApiError.js';
+import Lease from '../../lease/models/Lease.model.js';
+import { ApiError } from '../../../utils/apiError.js';
 
 // ------------------------------------------------------------------
 // BILLING CALCULATIONS

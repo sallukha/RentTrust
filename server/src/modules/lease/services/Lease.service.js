@@ -1,6 +1,6 @@
-import Lease from '../models/lease.model.js';
+import Lease from '../models/Lease.model.js';
 import Property from '../../property/models/property.model.js';  
-import { ApiError } from '../../../utils/ApiError.js'; 
+import { ApiError } from '../../../utils/apiError.js'; 
 
  
 

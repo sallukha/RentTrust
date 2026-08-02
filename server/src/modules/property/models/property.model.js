@@ -28,7 +28,7 @@ const propertySchema = new mongoose.Schema(
 );
 
 propertySchema.index({ 'address.city': 1, pricePerMonth: 1, bedrooms: 1, status: 1 });
-const Property = mongoose.model('Property', propertySchema);
+const Property = mongoose.models.Property || mongoose.model('Property', propertySchema);
 export default Property;
 
 

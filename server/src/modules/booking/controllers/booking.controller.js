@@ -45,12 +45,12 @@ export const getBookingById = asyncHandler(async (req, res) => {
 
     }
     res.status(200).json({ success: true, data: booking })
+    })
 
     export const updateBookingStatus = asyncHandler(async (req, res) => {
         const { status } = req.body
         const allowedStatus = ['confirmed', 'rejected']
-
-    })
+        
     if (booking.status !== "pending ") {
         throw new ApiError(400, `Cannot update a booking that is already '${booking.status}'`);
 

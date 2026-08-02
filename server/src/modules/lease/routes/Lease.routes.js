@@ -5,12 +5,12 @@ import {
   getLeases,
   getLeaseById,
   updateLeaseStatus
-} from '../controllers/lease.controller.js';
-import authMiddleware from '../../auth/middlewares/auth.middleware.js';  
+} from '../controllers/Lease.controller .js';
+import { protect } from '../../../middlewares/auth.middleware.js';  
 
 const router = express.Router();
 
-router.use(authMiddleware);  
+router.use(protect);  
 
 router.post('/', createLease);
 router.get('/', getLeases);

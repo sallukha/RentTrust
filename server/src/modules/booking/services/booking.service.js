@@ -1,5 +1,5 @@
 import Booking from '../models/booking.model.js';
-import { ApiError } from '../../../utils/ApiError.js'; // shared utils: server/src/utils/ApiError.js
+import { ApiError } from '../../../utils/apiError.js'; // shared utils: server/src/utils/apiError.js
 
 // ------------------------------------------------------------------
 // SLOT CONFLICT CHECKING

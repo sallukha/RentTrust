@@ -1,4 +1,4 @@
-import Property from "../models/property.model.js"
+
 import { searchProperties, assertCanCreateProperty, assertIsOwnerOrAdmin } from "../services/property.service.js"
 import { asyncHandler } from "../../../utils/asyncHandler.js"
 import { ApiError } from "../../../utils/apiError.js"
@@ -82,7 +82,7 @@ export const updateProperty = asyncHandler(async (req, res) => {
     if (imageFiles.length > 0) {
         const uploadResults = await Promise.all(imageFiles.map((file) => uploadOnCloudinary(file.path)));
         const newImageUrls = uploadResults.filter((url) => url !== null);
-        
+
         await Promise.all(property.images.map((url) => deleteFromCloudinary(url)));
 
         property.images = newImageUrls;
@@ -90,7 +90,7 @@ export const updateProperty = asyncHandler(async (req, res) => {
     await Property.save()
 })
 
-export const deleteProperty = asyncHandler((req, res) => {
+export const deleteProperty = asyncHandler(async(req, res) => {
 
     const property = await Property.findById(req.params.id)
 
