@@ -1,5 +1,5 @@
 import Lease from '../models/Lease.model.js';
-import { recordSignature, changeLeaseStatus } from '../services/lease.service.js';
+import { recordSignature, changeLeaseStatus } from '../services/Lease.service.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { ApiError } from '../../../utils/apiError.js';
  

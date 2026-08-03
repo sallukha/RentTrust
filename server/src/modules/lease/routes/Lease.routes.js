@@ -5,7 +5,7 @@ import {
   getLeases,
   getLeaseById,
   updateLeaseStatus
-} from '../controllers/Lease.controller .js';
+} from '../controllers/Lease.controller.js';
 import { protect } from '../../../middlewares/auth.middleware.js';  
 
 const router = express.Router();

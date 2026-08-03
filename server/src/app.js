@@ -11,6 +11,7 @@ import invoiceRoutes from "./modules/invoice/routes/Invoice.routes.js"
 import bookingRoutes from "./modules/booking/routes/booking.routes.js"
 import propertyRoutes from "./modules/property/routes/property.routes.js"
 import leaseRoutes from "./modules/lease/routes/Lease.routes.js"
+import complaintRoutes from "./modules/complaint/routes/complaint.routes.js"
 export const app = express()
 app.use(helmet())
 app.use(cors({ origin: true, credentials: true }))
@@ -29,5 +30,6 @@ app.use("/api/invoices", invoiceRoutes)
 app.use("/api/bookings", bookingRoutes)
 app.use("/api/propertys", propertyRoutes)
 app.use("/api/lease", leaseRoutes)
+app.use("/api/complaint", complaintRoutes)
 app.use(notFound)
 app.use(errorHandler)

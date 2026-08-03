@@ -7,7 +7,7 @@ import {
   assignContractor
 } from '../controllers/maintenance.controller.js';
 import { protect } from '../../../middlewares/auth.middleware.js';
-import { upload } from '../../../middlewares/multer.middleware.js'; // shared multer middleware
+import { upload } from '../../../middlewares/Multer.middleware.js'; // shared multer middleware
 
 const router = express.Router();
 

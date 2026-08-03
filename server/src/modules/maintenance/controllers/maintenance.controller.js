@@ -8,7 +8,7 @@ import {
 } from '../services/maintenance.service.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js'; // shared utils: server/src/utils/asyncHandler.js
 import { ApiError } from '../../../utils/apiError.js'; // shared utils: server/src/utils/apiError.js
-import { uploadOnCloudinary } from '../../../utils/cloudinary.util.js'; // shared utils
+import { uploadOnCloudinary } from '../../../utils/Cloudinary.util.js'; // shared utils
 
 // POST /api/maintenance - tenant reports an issue with description and photos
 export const submitTicket = asyncHandler(async (req, res) => {
