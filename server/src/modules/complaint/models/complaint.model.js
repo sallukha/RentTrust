@@ -22,6 +22,6 @@ const complaintSchema = new mongoose.Schema(
 complaintSchema.index({ complainantId: 1, status: 1 });
 complaintSchema.index({ respondentId: 1, status: 1 });
 
-const Complaint = mongoose.model('Complaint', complaintSchema);
+const Complaint = mongoose.model('complaint', complaintSchema);
 
 export default Complaint;
