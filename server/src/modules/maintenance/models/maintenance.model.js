@@ -35,6 +35,6 @@ const maintenanceSchema = new mongoose.Schema(
 // Speeds up the common filter combos (property + status + priority)
 maintenanceSchema.index({ propertyId: 1, status: 1, priority: 1 });
 
-const Maintenance = mongoose.model('maintenance', maintenanceSchema);
+const Maintenance = mongoose.models.Maintenance || mongoose.model('Maintenance', maintenanceSchema);
 
 export default Maintenance;

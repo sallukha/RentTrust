@@ -20,5 +20,5 @@ const leaseSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-const Lease = mongoose.model('Lease', leaseSchema);
+const Lease = mongoose.models.Lease || mongoose.model('Lease', leaseSchema);
 export default Lease;
