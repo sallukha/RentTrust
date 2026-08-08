@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const adminLogSchema = new mongoose.Schema(
   {
     adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    action: { type: String, required: true }, // e.g. "PROPERTY_STATUS_OVERRIDE", "COMPLAINT_FORCE_RESOLVE"
+    action: { type: String, required: true },  
     targetType: {
       type: String,
       enum: ['Property', 'Booking', 'Invoice', 'Lease', 'Maintenance', 'Complaint', 'User'],

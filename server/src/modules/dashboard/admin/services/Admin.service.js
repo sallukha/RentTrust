@@ -11,7 +11,6 @@ import AdminLog from  "../model/Adminlog.model.js"
 // ------------------------------------------------------------------
 
 /**
- * Combines a lightweight summary from every module into a single
  * dashboard payload. Runs all counts in parallel for speed.
  */
 export const getPlatformOverview = async () => {
