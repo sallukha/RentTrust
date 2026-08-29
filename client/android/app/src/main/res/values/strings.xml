@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RentalTrust</string>
+    <string name="title_activity_main">RentalTrust</string>
+    <string name="package_name">com.rentaltrust.app</string>
+    <string name="custom_url_scheme">com.rentaltrust.app</string>
+</resources>
