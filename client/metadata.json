@@ -1,0 +1,6 @@
+{
+  "name": "Rental Community Onboarding",
+  "description": "Full-stack rental community application with official RentalTrust logo splash, welcome onboarding, 842 Tenant Reputation Home Dashboard with active journey tracking & saved lofts, guest stays discovery, custom filters & criteria, landlord dashboard with occupancy analytics & applicant dossier review, Marcus Sterling landlord reputation profile, 8-step verified property listing creation flow, and end-to-end encrypted OTP phone verification.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
