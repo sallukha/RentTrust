@@ -31,7 +31,7 @@ export const createProperty = asyncHandler(async (req, res) => {
     } = req.body
 
     const imageFiles = req.files || [];
-    if (imageFiles === 0) {
+    if (imageFiles.length === 0) {
         throw new ApiError(400, 'At least one property image is required');
     }
     const uploadResults = await Promise.all(imageFiles.map((file) => uploadOnCloudinary(file.path)));
@@ -87,7 +87,9 @@ export const updateProperty = asyncHandler(async (req, res) => {
 
         property.images = newImageUrls;
     }
-    await Property.save()
+    await property.save()
+
+    res.status(200).json({ success: true, data: property })
 })
 
 export const deleteProperty = asyncHandler(async(req, res) => {

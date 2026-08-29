@@ -1,42 +1,42 @@
-import Property from "../model/Property.model.js";
+import Property from "../../../property/models/property.model.js";
 import Request from "../model/Request.model.js";
-import Payment from "../model/Payment model.js";
+import Invoice from "../../../invoice/models/invoice.model.js";
 import Activity from "../model/Activity.model.js";
 export const getOwnerDashboard = async (req, res) => {
     try {
         const ownerId = req.user.id;
         const activeListings = await Property.countDocuments({
-            owner: ownerId,
-            status: "ACTIVE",
+            landlordId: ownerId,
+            status: "available",
         })
         const pendingRequests = await Request.countDocuments({
             owner: ownerId,
             status: "ACTIVE",
         })
         const occupied = await Property.countDocuments({
-            owner: ownerId,
-            isOccupied: true,
+            landlordId: ownerId,
+            status: "rented",
         })
         const totalProperty = await Property.countDocuments({
-            owner: ownerId,
+            landlordId: ownerId,
         });
         const occupancyRate =
             totalProperty === 0
                 ? 0
                 : Math.round((occupied / totalProperty) * 100);
 
-        const revenue = await Payment.aggregate([
+        const revenue = await Invoice.aggregate([
             {
                 $match: {
-                    owner: ownerId,
-                    status: "SUCCESS",
+                    landlordId: ownerId,
+                    status: "paid",
                 },
             },
             {
                 $group: {
                     _id: null,
                     totalRevenue: {
-                        $sum: "$amount",
+                        $sum: "$amountDue",
                     },
                 }
             }

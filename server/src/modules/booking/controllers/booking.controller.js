@@ -27,7 +27,7 @@ export const createBooking = asyncHandler(async (req, res) => {
 export const getBookings = asyncHandler(async (req, res) => {
     const { role, id } = req.user
     const filter = role === 'landlord' ? { landlordId: id } : { tenantId: id }
-    const booking = await Booking.find(filter).sort({ requestedDate: 1 })
+    const bookings = await Booking.find(filter).sort({ requestedDate: 1 })
     res.status(200).json({ success: true, data: bookings })
 })
 export const getBookingById = asyncHandler(async (req, res) => {
@@ -38,8 +38,8 @@ export const getBookingById = asyncHandler(async (req, res) => {
     }
     const { role, id } = req.user
     const isParty =
-        (role === "landlord" && Booking.landlordId.toString() === id) ||
-        (role === "tenant" && Booking.tenantId.toString() === id)
+        (role === "landlord" && booking.landlordId.toString() === id) ||
+        (role === "tenant" && booking.tenantId.toString() === id)
     if (!isParty) {
         throw new ApiError(403, "Access denied");
 
@@ -50,11 +50,7 @@ export const getBookingById = asyncHandler(async (req, res) => {
     export const updateBookingStatus = asyncHandler(async (req, res) => {
         const { status } = req.body
         const allowedStatus = ['confirmed', 'rejected']
-        
-    if (booking.status !== "pending ") {
-        throw new ApiError(400, `Cannot update a booking that is already '${booking.status}'`);
 
-    }
     if (!allowedStatus.includes(status)) {
         throw new ApiError(400, "Status must be either 'confirmed' or 'rejected'");
     }
@@ -100,7 +96,6 @@ export const cancelBooking = asyncHandler(async (req, res) => {
     if (booking.status === 'completed' || booking.status === 'cancelled') {
         throw new ApiError(400, `Cannot cancel a booking that is already '${booking.status}'`);
     }
-
     booking.status = 'cancelled';
     await booking.save();
     await notifyBookingStatusChange(booking);

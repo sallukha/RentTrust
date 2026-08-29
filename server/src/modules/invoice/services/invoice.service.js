@@ -12,11 +12,11 @@ import { ApiError } from '../../../utils/apiError.js';
  * Builds lineItems + total amountDue from an active lease record.
  */
 export const calculateLineItems = (lease) => {
-  if (!lease || !lease.rentAmount) {
-    throw new ApiError(400, 'Invalid lease data: rentAmount is required to calculate invoice');
+  if (!lease || !lease.monthlyRent) {
+    throw new ApiError(400, 'Invalid lease data: monthlyRent is required to calculate invoice');
   }
 
-  const lineItems = [{ description: 'Monthly Rent', amount: lease.rentAmount }];
+  const lineItems = [{ description: 'Monthly Rent', amount: lease.monthlyRent }];
 
   if (lease.utilityCharge) {
     lineItems.push({ description: 'Utility Charges', amount: lease.utilityCharge });
@@ -101,7 +101,7 @@ export const runMonthlyBillingJob = async () => {
 
     const activeLeases = await Lease.find({
       status: 'active',
-      nextDueDate: { $gte: startOfDay, $lte: endOfDay }
+      endDate: { $gte: startOfDay, $lte: endOfDay }
     });
 
     for (const lease of activeLeases) {
@@ -120,7 +120,7 @@ export const runMonthlyBillingJob = async () => {
         tenantId: lease.tenantId,
         landlordId: lease.landlordId,
         amountDue,
-        dueDate: lease.nextDueDate,
+        dueDate: lease.endDate,
         lineItems
       });
     }

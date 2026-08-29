@@ -42,11 +42,13 @@ export const generateInvoice = asyncHandler(async (req, res) => {
     }
     const { leaseId, tenantId, landlordId, amountDue, dueDate, lineItems } = req.body
 
-    if (landlord !== req.user.role) {
-        throw new ApiError(403, "Cannot generate invoice for another other landlord");
+    if (landlordId !== req.user.id) {
+        throw new ApiError(403, "Cannot generate invoice for another landlord");
     }
+
+    const invoiceNumber = `INV-${Date.now()}-${req.user.id}`
     const invoice = await Invoice.create({
-        nvoiceNumber,
+        invoiceNumber,
         leaseId,
         tenantId,
         landlordId,
@@ -57,7 +59,7 @@ export const generateInvoice = asyncHandler(async (req, res) => {
     if (!invoice) {
         throw new ApiError(500, "Failed to generate invoice");
     }
-    res.stutas(200).json({ success: true, data: invoice })
+    res.status(201).json({ success: true, data: invoice })
 })
 export const updateInvoiceStatus = asyncHandler(async (req, res) => {
     const { status } = req.body
@@ -77,7 +79,7 @@ export const updateInvoiceStatus = asyncHandler(async (req, res) => {
     invoice.status = status
     await invoice.save()
 
-    res.status(200).json({ success: false, message: error.message })
+    res.status(200).json({ success: true, data: invoice })
 })
 export const downloadInvoicePdf = asyncHandler(async (req, res) => {
     const invoice = await Invoice.findById(req.params.id);

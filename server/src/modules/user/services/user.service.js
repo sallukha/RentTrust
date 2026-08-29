@@ -1,6 +1,6 @@
 import { UserProfile } from '../models/userProfile.model.js'
 import { TenantProfile } from '../tenant/models/tenantProfile.model.js'
-// import { LandlordProfile } from '../models/landlordProfile.model.js'
+import { LandlordProfile } from '../landlord/models/landlordProfile.model.js'
 
 export const createUserProfiles = async ({ user }) => {
     const userProfile = await UserProfile.create({
