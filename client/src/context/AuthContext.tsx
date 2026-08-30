@@ -114,7 +114,26 @@ const initialLoginData: LoginFormData = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentScreen, setCurrentScreen] = useState<AppScreen>('logo-splash');
+  const [currentScreen, setCurrentScreen] = useState<AppScreen>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('rental_current_screen') as AppScreen;
+      if (saved) return saved;
+
+      // If we have a token but no saved screen, go to dashboard/home
+      const token = localStorage.getItem('rental_token');
+      if (token) {
+        const role = localStorage.getItem('rental_active_role');
+        return (role === 'landlord' || role === 'admin') ? 'dashboard' : 'tenant-home';
+      }
+    }
+    return 'logo-splash';
+  });
+
+  // Helper to update screen and persist it
+  const updateCurrentScreen = useCallback((screen: AppScreen) => {
+    setCurrentScreen(screen);
+    localStorage.setItem('rental_current_screen', screen);
+  }, []);
   
   // Guest Experience State
   const [guestTab, setGuestTab] = useState<GuestBottomTab>('home');
@@ -228,47 +247,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Tenant Rental Application State
   const [rentalApplication, setRentalApplication] = useState<RentalApplicationData>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('rental_application');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          // ignore
+        }
+      }
+    }
     return {
-      id: 'app_skyline_402',
-      propertyId: 'prop-skyline-industrial',
-      propertyTitle: 'Skyline Vista Apartments',
-      unit: 'Unit 402',
-      address: '128 Harbor St.',
-      monthlyRent: '$3,200.00',
-      rentNumeric: 3200,
-      applicantName: 'Alex Chen',
-      applicantAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      applicantOccupation: 'Senior Product Designer at Stripe',
-      applicantLocation: 'Seattle, WA',
-      reputationScore: 942,
-      reputationBadge: 'ELITE PREFERRED',
-      moveInDate: '2024-10-15',
+      id: '',
+      propertyId: '',
+      propertyTitle: '',
+      unit: '',
+      address: '',
+      monthlyRent: '',
+      rentNumeric: 0,
+      applicantName: '',
+      applicantAvatar: '',
+      applicantOccupation: '',
+      applicantLocation: '',
+      reputationScore: 0,
+      reputationBadge: '',
+      moveInDate: '',
       leaseDurationMonths: 12,
       occupantsCount: 1,
       purpose: 'residential',
       documentType: 'drivers_license',
-      frontDocumentName: 'drivers_license_front.png',
-      backDocumentName: 'drivers_license_back.png',
-      faceMatchCompleted: true,
+      frontDocumentName: '',
+      backDocumentName: '',
+      faceMatchCompleted: false,
       employmentType: 'full_time',
-      companyName: 'Stripe',
-      jobTitle: 'Senior Product Designer',
-      annualIncome: '$165,000',
-      paystubUploaded: true,
-      linkedinUrl: 'https://linkedin.com/in/alexchen',
-      portfolioUrl: 'https://alexchen.design',
-      agreedToTerms: true,
-      status: 'shortlisted',
-      submittedAt: 'Oct 12, 09:30 AM',
-      viewedAt: 'Oct 13, 02:15 PM',
-      shortlistedAt: 'Oct 14, 11:00 AM',
+      companyName: '',
+      jobTitle: '',
+      annualIncome: '',
+      paystubUploaded: false,
+      linkedinUrl: '',
+      portfolioUrl: '',
+      agreedToTerms: false,
+      status: 'draft',
+      submittedAt: '',
+      viewedAt: '',
+      shortlistedAt: '',
       isLeaseSigned: false,
       digitalKeyCode: '4492',
       lockboxCode: '8842',
     };
   });
 
-  const [tenantAppStep, setTenantAppStep] = useState<number>(0);
+  const [tenantAppStep, setTenantAppStep] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('rental_tenant_app_step');
+      if (saved) return parseInt(saved, 10);
+    }
+    return 0;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('rental_application', JSON.stringify(rentalApplication));
+  }, [rentalApplication]);
+
+  useEffect(() => {
+    localStorage.setItem('rental_tenant_app_step', tenantAppStep.toString());
+  }, [tenantAppStep]);
 
   // Chat & Messaging State
   const [conversations, setConversations] = useState<ConversationItem[]>([
@@ -347,11 +390,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveRole(newRole);
     localStorage.setItem('rental_active_role', newRole);
     if (newRole === 'landlord' || newRole === 'admin') {
-      setCurrentScreen('dashboard');
+      updateCurrentScreen('dashboard');
     } else {
-      setCurrentScreen('tenant-home');
+      updateCurrentScreen('tenant-home');
     }
-  }, []);
+  }, [updateCurrentScreen]);
 
   const updateRentalApplication = useCallback((data: Partial<RentalApplicationData>) => {
     setRentalApplication((prev) => ({ ...prev, ...data }));
@@ -373,10 +416,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       rentNumeric: targetProp.priceNumeric,
       status: 'draft',
       agreedToTerms: false,
+      moveInDate: '',
+      companyName: '',
+      jobTitle: '',
+      annualIncome: '',
     }));
     setTenantAppStep(0);
-    setCurrentScreen('tenant-new-request');
-  }, [properties, selectedProperty]);
+    updateCurrentScreen('tenant-new-request');
+  }, [properties, selectedProperty, updateCurrentScreen]);
 
   const submitRentalApplication = useCallback(async () => {
     const familyTypeMap: Record<string, 'BACHELOR' | 'FAMILY' | 'STUDENT' | 'WORKING_PROFESSIONAL'> = {
@@ -385,15 +432,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       student: 'STUDENT',
     };
 
+    const propertyId = rentalApplication.propertyId || selectedProperty?.id || '';
+
+    // Validate if propertyId is a valid MongoDB ObjectId (24 hex chars)
+    // Hardcoded mock IDs like 'prop-skyline-industrial' will fail this check
+    const isMongoId = /^[0-9a-fA-F]{24}$/.test(propertyId);
+
+    if (!isMongoId) {
+      setLoginErrors({ general: 'Invalid property selected. Please go back and select a property from the explorer again.' });
+      return false;
+    }
+
     const payload = {
-      propertyId: rentalApplication.propertyId || selectedProperty?.id || '',
+      propertyId,
       moveInDate: rentalApplication.moveInDate || new Date().toISOString().slice(0, 10),
       durationMonths: rentalApplication.leaseDurationMonths || 12,
       occupants: rentalApplication.occupantsCount || 1,
       familyType: familyTypeMap[rentalApplication.purpose || 'residential'] || 'BACHELOR',
       currentCity: rentalApplication.applicantLocation || currentUser?.email || 'Seattle',
       pets: false,
-      occupation: rentalApplication.applicantOccupation || 'Professional',
+      occupation: rentalApplication.jobTitle || 'Professional',
       organization: rentalApplication.companyName || 'Independent',
       monthlyIncome: Math.max(0, Math.round((Number.parseFloat((rentalApplication.annualIncome || '0').replace(/[^\d.]/g, '')) || 0) / 12)),
       reason: 'Looking for a long-term home in a verified rental community.',
@@ -420,15 +478,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         submittedAt: nowStr,
       }));
       setTenantAppStep(5);
+      return true;
     } catch (error) {
       console.error('Failed to submit rental request:', error);
-      const nowStr = 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setRentalApplication((prev) => ({
-        ...prev,
-        status: 'submitted',
-        submittedAt: nowStr,
-      }));
-      setTenantAppStep(5);
+      const message = error instanceof Error ? error.message : 'Submission failed';
+      setLoginErrors({ general: message });
+      return false;
     }
   }, [currentUser, rentalApplication, selectedProperty]);
 
@@ -551,8 +606,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const openPropertyDetail = useCallback((prop: PropertyListing) => {
     setSelectedProperty(prop);
-    setCurrentScreen('property-detail');
-  }, []);
+    updateCurrentScreen('property-detail');
+  }, [updateCurrentScreen]);
 
   const toggleSaveProperty = useCallback((id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -597,7 +652,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       await apiService.requestLoginOtp(loginData);
-      setCurrentScreen('otp-verification');
+      updateCurrentScreen('otp-verification');
       return true;
     } catch (err) {
       setLoginErrors({
@@ -624,20 +679,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setActiveRole(resolvedRole);
       localStorage.setItem('rental_active_role', resolvedRole);
 
+      // Always persist for reload stability
+      localStorage.setItem('rental_user', JSON.stringify(res.user));
+      localStorage.setItem('rental_token', res.token);
+      localStorage.setItem('rental_portfolio', JSON.stringify(res.portfolioSummary));
+
       if (loginData.rememberDevice) {
         localStorage.setItem('rental_saved_identifier', loginData.identifier);
-        localStorage.setItem('rental_user', JSON.stringify(res.user));
-        localStorage.setItem('rental_token', res.token);
-        localStorage.setItem('rental_portfolio', JSON.stringify(res.portfolioSummary));
       } else {
         localStorage.removeItem('rental_saved_identifier');
       }
 
       if (returnToScreenAfterAuth) {
-        setCurrentScreen(returnToScreenAfterAuth);
+        updateCurrentScreen(returnToScreenAfterAuth);
         setReturnToScreenAfterAuth(null);
       } else {
-        setCurrentScreen(res.user.profileType === 'landlord' || res.user.profileType === 'admin' ? 'dashboard' : 'tenant-home');
+        updateCurrentScreen(res.user.profileType === 'landlord' || res.user.profileType === 'admin' ? 'dashboard' : 'tenant-home');
       }
 
       try {
@@ -678,10 +735,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('rental_portfolio', JSON.stringify(res.portfolioSummary));
 
       if (returnToScreenAfterAuth) {
-        setCurrentScreen(returnToScreenAfterAuth);
+        updateCurrentScreen(returnToScreenAfterAuth);
         setReturnToScreenAfterAuth(null);
       } else {
-        setCurrentScreen('dashboard');
+        updateCurrentScreen('dashboard');
       }
 
       try {
@@ -717,7 +774,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('rental_user');
     localStorage.removeItem('rental_token');
     localStorage.removeItem('rental_portfolio');
-    setCurrentScreen('guest-home');
+    updateCurrentScreen('guest-home');
     setGuestTab('home');
     setIsGuestLoading(false);
     return true;
@@ -764,14 +821,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('rental_user');
     localStorage.removeItem('rental_token');
     localStorage.removeItem('rental_portfolio');
-    setCurrentScreen('login');
-  }, []);
+    localStorage.removeItem('rental_current_screen');
+    localStorage.removeItem('rental_registration_form');
+    localStorage.removeItem('rental_list_property_form');
+    localStorage.removeItem('rental_list_property_step');
+    localStorage.removeItem('rental_application');
+    localStorage.removeItem('rental_tenant_app_step');
+    updateCurrentScreen('login');
+  }, [updateCurrentScreen]);
 
   return (
     <AuthContext.Provider
       value={{
         currentScreen,
-        setCurrentScreen,
+        setCurrentScreen: updateCurrentScreen,
         guestTab,
         setGuestTab,
         guestHomeVariant,

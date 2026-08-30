@@ -129,7 +129,10 @@ const SAMPLE_IMAGES = {
 
 export const ListPropertyScreen: React.FC = () => {
   const { setCurrentScreen, setSelectedProperty } = useAuth();
-  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [currentStep, setCurrentStep] = useState<number>(() => {
+    const saved = localStorage.getItem('rental_list_property_step');
+    return saved ? parseInt(saved, 10) : 1;
+  });
   const [customHighlightInput, setCustomHighlightInput] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [isPublishedModalOpen, setIsPublishedModalOpen] = useState(false);
@@ -137,7 +140,7 @@ export const ListPropertyScreen: React.FC = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [activeBottomNav, setActiveBottomNav] = useState<'dashboard' | 'properties' | 'requests' | 'messages' | 'menu'>('properties');
 
-  const [formData, setFormData] = useState<ListPropertyFormData>({
+  const initialFormData: ListPropertyFormData = {
     title: 'Modern Downtown Loft',
     propertyType: 'Apartment',
     bedrooms: '2',
@@ -187,7 +190,37 @@ export const ListPropertyScreen: React.FC = () => {
     deedFileName: 'Horizon_Deed_Seattle_Title2026.pdf',
     utilityUploaded: true,
     utilityFileName: 'Seattle_City_Light_July2026.pdf',
+  };
+
+  const [formData, setFormData] = useState<ListPropertyFormData>(() => {
+    const saved = localStorage.getItem('rental_list_property_form');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // File objects cannot be restored, so set them to null
+        return {
+          ...parsed,
+          coverPhotoFile: null,
+          livingRoomPhotoFile: null,
+          kitchenPhotoFile: null,
+          bedroomPhotoFile: null,
+        };
+      } catch (e) {
+        return initialFormData;
+      }
+    }
+    return initialFormData;
   });
+
+  useEffect(() => {
+    localStorage.setItem('rental_list_property_step', currentStep.toString());
+  }, [currentStep]);
+
+  useEffect(() => {
+    // Don't save File objects to localStorage
+    const { coverPhotoFile, livingRoomPhotoFile, kitchenPhotoFile, bedroomPhotoFile, ...rest } = formData;
+    localStorage.setItem('rental_list_property_form', JSON.stringify(rest));
+  }, [formData]);
 
   const nextStep = () => {
     if (currentStep < 8) {
@@ -297,6 +330,10 @@ export const ListPropertyScreen: React.FC = () => {
         amenities,
         images: imageFiles,
       });
+
+      // Clear local storage on success
+      localStorage.removeItem('rental_list_property_form');
+      localStorage.removeItem('rental_list_property_step');
 
       // Show success modal
       setIsPublishedModalOpen(true);

@@ -68,7 +68,7 @@ export const HeaderActions: React.FC = () => {
                     className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/60 cursor-pointer hover:shadow-xs transition-all"
                   >
                     <p className="font-bold text-teal-900 dark:text-teal-200">
-                      New message from Marcus Sterling
+                      New message from {conversations.find(c => c.unread)?.participantName || 'Landlord'}
                     </p>
                     <p className="text-[11px] text-teal-700 dark:text-teal-400 truncate">
                       "I've sent the agreement for your review & signature."

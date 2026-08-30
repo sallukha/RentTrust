@@ -47,12 +47,28 @@ const initialFormData: RegistrationFormData = {
 const RegistrationContext = createContext<RegistrationContextType | undefined>(undefined);
 
 export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [formData, setFormData] = useState<RegistrationFormData>(initialFormData);
+  const [formData, setFormData] = useState<RegistrationFormData>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('rental_registration_form');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          // ignore
+        }
+      }
+    }
+    return initialFormData;
+  });
   const [errors, setErrors] = useState<FormValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isValidatingField, setIsValidatingField] = useState<Record<string, boolean>>({});
   const [registeredResponse, setRegisteredResponse] = useState<RegistrationResponse | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('rental_registration_form', JSON.stringify(formData));
+  }, [formData]);
 
   const [rolesData, setRolesData] = useState<Record<ProfileType, RoleDetail> | null>(null);
   const [statsData, setStatsData] = useState<CommunityStats | null>(null);
@@ -220,6 +236,7 @@ export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       const res = await apiService.registerUser(formData);
       setRegisteredResponse(res);
+      localStorage.removeItem('rental_registration_form');
       await refreshStats();
 
       // Trigger celebratory confetti

@@ -6,7 +6,7 @@ import { useRegistration } from '../context/RegistrationContext';
 import confetti from 'canvas-confetti';
 
 export const OtpVerificationScreen: React.FC = () => {
-  const { setCurrentScreen } = useAuth();
+  const { setCurrentScreen, verifyPendingLoginOtp, loginData, loginErrors } = useAuth();
   const { formData } = useRegistration();
 
   // 6 digits array
@@ -22,7 +22,8 @@ export const OtpVerificationScreen: React.FC = () => {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Phone number from registration context or fallback demo
-  const displayPhone = formData.phoneNumber?.trim() || '+1 (555) 000-0000';
+  const displayPhone = loginData.identifier || formData.phoneNumber?.trim() || '+1 (555) 000-0000';
+
 
   // Real-time Countdown Timer
   useEffect(() => {
@@ -148,7 +149,7 @@ export const OtpVerificationScreen: React.FC = () => {
   };
 
   // Submit and verify code
-  const handleVerify = () => {
+  const handleVerify = async () => {
     const fullCode = otp.join('');
     if (fullCode.length < 6) {
       setErrorMessage('Please enter the complete 6-digit verification code.');
@@ -158,7 +159,9 @@ export const OtpVerificationScreen: React.FC = () => {
     setIsVerifying(true);
     setErrorMessage(null);
 
-    setTimeout(() => {
+    const success = await verifyPendingLoginOtp(fullCode);
+
+    if (success) {
       setIsVerifying(false);
       setIsSuccess(true);
 
@@ -174,15 +177,11 @@ export const OtpVerificationScreen: React.FC = () => {
         // optional confetti
       }
 
-      // Transition to next screen after brief celebration
-      setTimeout(() => {
-        if (formData.profileType === 'landlord') {
-          setCurrentScreen('dashboard');
-        } else {
-          setCurrentScreen('guest-home');
-        }
-      }, 1200);
-    }, 900);
+      // verifyPendingLoginOtp handles setCurrentScreen
+    } else {
+      setIsVerifying(false);
+      // loginErrors.general will be shown automatically in the UI
+    }
   };
 
   return (
@@ -286,7 +285,7 @@ export const OtpVerificationScreen: React.FC = () => {
 
         {/* Error Feedback */}
         <AnimatePresence>
-          {errorMessage && (
+          {(errorMessage || loginErrors.general) && (
             <motion.div
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -294,7 +293,7 @@ export const OtpVerificationScreen: React.FC = () => {
               className="mb-4 p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-xs font-semibold text-rose-700 dark:text-rose-300 flex items-center gap-2 max-w-sm w-full"
             >
               <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
-              <span>{errorMessage}</span>
+              <span>{errorMessage || loginErrors.general}</span>
             </motion.div>
           )}
 

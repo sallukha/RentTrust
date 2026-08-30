@@ -5,12 +5,15 @@ import { useRegistration } from '../context/RegistrationContext';
 import { useAuth } from '../context/AuthContext';
 
 export const SubmitButton: React.FC = () => {
-  const { isSubmitting, errors, handleSubmit } = useRegistration();
-  const { setCurrentScreen } = useAuth();
+  const { isSubmitting, errors, handleSubmit, formData } = useRegistration();
+  const { setCurrentScreen, setLoginFieldValue } = useAuth();
 
   const handleCreateAccount = async (e: React.MouseEvent) => {
     const ok = await handleSubmit(e);
     if (ok) {
+      // Sync auth context so OTP screen knows what to verify
+      setLoginFieldValue('identifier', formData.email || formData.phoneNumber);
+      setLoginFieldValue('role', formData.profileType);
       setCurrentScreen('otp-verification');
     }
   };

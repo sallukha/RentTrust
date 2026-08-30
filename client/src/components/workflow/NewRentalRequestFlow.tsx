@@ -25,6 +25,8 @@ import {
   Key,
   Check,
   FileText,
+  AlertCircle,
+  Loader,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { DocumentTypeId, EmploymentTypeId, RentalPurpose } from '../../types/workflow';
@@ -38,6 +40,8 @@ export const NewRentalRequestFlow: React.FC = () => {
     submitRentalApplication,
     setCurrentScreen,
     setGuestTab,
+    loginErrors,
+    isLoggingIn,
   } = useAuth();
 
   // Local state for Step 2 upload preview & selfies
@@ -45,6 +49,28 @@ export const NewRentalRequestFlow: React.FC = () => {
   const [frontDocName, setFrontDocName] = useState<string | null>(rentalApplication.frontDocumentName || null);
   const [backDocName, setBackDocName] = useState<string | null>(rentalApplication.backDocumentName || null);
   const [paystubName, setPaystubName] = useState<string | null>('Paystub_Recent_Sept2024.pdf');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateStep = (step: number) => {
+    const newErrors: Record<string, string> = {};
+    if (step === 1) {
+      if (!rentalApplication.moveInDate) newErrors.moveInDate = 'Please select a move-in date';
+    } else if (step === 3) {
+      if (!rentalApplication.companyName) newErrors.companyName = 'Company name is required';
+      if (!rentalApplication.jobTitle) newErrors.jobTitle = 'Job title is required';
+      if (!rentalApplication.annualIncome) newErrors.annualIncome = 'Annual income is required';
+    } else if (step === 4) {
+      if (!rentalApplication.agreedToTerms) newErrors.agreedToTerms = 'You must agree to the terms';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleNext = () => {
+    if (validateStep(tenantAppStep)) {
+      setTenantAppStep(tenantAppStep + 1);
+    }
+  };
 
   // Step 0: Pre-Application Status (Screen 1)
   if (tenantAppStep === 0) {
@@ -245,11 +271,15 @@ export const NewRentalRequestFlow: React.FC = () => {
               <div className="relative">
                 <input
                   type="date"
-                  value={rentalApplication.moveInDate || '2024-10-15'}
-                  onChange={(e) => updateRentalApplication({ moveInDate: e.target.value })}
-                  className="w-full py-3 px-4 rounded-2xl bg-sky-50/70 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  value={rentalApplication.moveInDate || ''}
+                  onChange={(e) => {
+                    updateRentalApplication({ moveInDate: e.target.value });
+                    if (errors.moveInDate) setErrors(prev => ({ ...prev, moveInDate: '' }));
+                  }}
+                  className={`w-full py-3 px-4 rounded-2xl bg-sky-50/70 dark:bg-slate-800 border ${errors.moveInDate ? 'border-red-500' : 'border-sky-100 dark:border-slate-700'} text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500`}
                 />
               </div>
+              {errors.moveInDate && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.moveInDate}</p>}
             </div>
 
             {/* Lease Duration Slider */}
@@ -263,10 +293,27 @@ export const NewRentalRequestFlow: React.FC = () => {
                 </span>
               </div>
               <div className="p-4 rounded-2xl bg-sky-50/70 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 space-y-2">
+                <div className="flex items-center gap-2 mb-2">
+                  {[6, 11, 12].map((months) => (
+                    <button
+                      key={months}
+                      type="button"
+                      onClick={() => updateRentalApplication({ leaseDurationMonths: months })}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${
+                        (rentalApplication.leaseDurationMonths || 12) === months
+                          ? 'bg-teal-600 text-white shadow-sm'
+                          : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-600'
+                      }`}
+                    >
+                      {months} mo
+                    </button>
+                  ))}
+                </div>
                 <input
                   type="range"
                   min={1}
                   max={24}
+                  step={1}
                   value={rentalApplication.leaseDurationMonths || 12}
                   onChange={(e) =>
                     updateRentalApplication({ leaseDurationMonths: parseInt(e.target.value) })
@@ -391,7 +438,7 @@ export const NewRentalRequestFlow: React.FC = () => {
         <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800 max-w-lg mx-auto w-full">
           <button
             type="button"
-            onClick={() => setTenantAppStep(2)}
+            onClick={handleNext}
             className="w-full py-3.5 px-5 rounded-2xl bg-slate-950 hover:bg-slate-850 dark:bg-teal-500 dark:hover:bg-teal-400 dark:text-slate-950 text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2"
           >
             <span>Continue to Identity</span>
@@ -533,7 +580,7 @@ export const NewRentalRequestFlow: React.FC = () => {
         <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800 max-w-lg mx-auto w-full">
           <button
             type="button"
-            onClick={() => setTenantAppStep(3)}
+            onClick={handleNext}
             className="w-full py-3.5 px-5 rounded-2xl bg-slate-950 hover:bg-slate-850 dark:bg-teal-500 dark:hover:bg-teal-400 dark:text-slate-950 text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2"
           >
             <span>Continue to Employment</span>
@@ -609,11 +656,15 @@ export const NewRentalRequestFlow: React.FC = () => {
                     <input
                       type="text"
                       placeholder="e.g. Stripe"
-                      value={rentalApplication.companyName || 'Stripe'}
-                      onChange={(e) => updateRentalApplication({ companyName: e.target.value })}
-                      className="w-full py-3 pl-10 pr-4 rounded-2xl bg-sky-50/70 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      value={rentalApplication.companyName || ''}
+                      onChange={(e) => {
+                        updateRentalApplication({ companyName: e.target.value });
+                        if (errors.companyName) setErrors(prev => ({ ...prev, companyName: '' }));
+                      }}
+                      className={`w-full py-3 pl-10 pr-4 rounded-2xl bg-sky-50/70 dark:bg-slate-800 border ${errors.companyName ? 'border-red-500' : 'border-sky-100 dark:border-slate-700'} text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500`}
                     />
                   </div>
+                  {errors.companyName && <p className="text-[10px] text-red-500 font-bold ml-1 mt-0.5">{errors.companyName}</p>}
                 </div>
 
                 <div>
@@ -625,11 +676,15 @@ export const NewRentalRequestFlow: React.FC = () => {
                     <input
                       type="text"
                       placeholder="e.g. Senior Product Designer"
-                      value={rentalApplication.jobTitle || 'Senior Product Designer'}
-                      onChange={(e) => updateRentalApplication({ jobTitle: e.target.value })}
-                      className="w-full py-3 pl-10 pr-4 rounded-2xl bg-sky-50/70 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      value={rentalApplication.jobTitle || ''}
+                      onChange={(e) => {
+                        updateRentalApplication({ jobTitle: e.target.value });
+                        if (errors.jobTitle) setErrors(prev => ({ ...prev, jobTitle: '' }));
+                      }}
+                      className={`w-full py-3 pl-10 pr-4 rounded-2xl bg-sky-50/70 dark:bg-slate-800 border ${errors.jobTitle ? 'border-red-500' : 'border-sky-100 dark:border-slate-700'} text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500`}
                     />
                   </div>
+                  {errors.jobTitle && <p className="text-[10px] text-red-500 font-bold ml-1 mt-0.5">{errors.jobTitle}</p>}
                 </div>
               </div>
             </div>
@@ -652,11 +707,15 @@ export const NewRentalRequestFlow: React.FC = () => {
                     <input
                       type="text"
                       placeholder="165,000"
-                      value={rentalApplication.annualIncome || '$165,000'}
-                      onChange={(e) => updateRentalApplication({ annualIncome: e.target.value })}
-                      className="w-full py-3 pl-8 pr-4 rounded-2xl bg-sky-50/70 dark:bg-slate-800 border border-sky-100 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      value={rentalApplication.annualIncome || ''}
+                      onChange={(e) => {
+                        updateRentalApplication({ annualIncome: e.target.value });
+                        if (errors.annualIncome) setErrors(prev => ({ ...prev, annualIncome: '' }));
+                      }}
+                      className={`w-full py-3 pl-8 pr-4 rounded-2xl bg-sky-50/70 dark:bg-slate-800 border ${errors.annualIncome ? 'border-red-500' : 'border-sky-100 dark:border-slate-700'} text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500`}
                     />
                   </div>
+                  {errors.annualIncome && <p className="text-[10px] text-red-500 font-bold ml-1 mt-0.5">{errors.annualIncome}</p>}
                 </div>
 
                 <div>
@@ -716,7 +775,7 @@ export const NewRentalRequestFlow: React.FC = () => {
         <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800 max-w-lg mx-auto w-full">
           <button
             type="button"
-            onClick={() => setTenantAppStep(4)}
+            onClick={handleNext}
             className="w-full py-3.5 px-5 rounded-2xl bg-slate-950 hover:bg-slate-850 dark:bg-teal-500 dark:hover:bg-teal-400 dark:text-slate-950 text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2"
           >
             <span>Review Your Request</span>
@@ -847,33 +906,59 @@ export const NewRentalRequestFlow: React.FC = () => {
             </div>
 
             {/* Agreement Checkbox */}
-            <label className="flex items-start gap-2.5 p-3 rounded-2xl bg-sky-50/40 dark:bg-slate-800/40 border border-sky-100 dark:border-slate-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={rentalApplication.agreedToTerms || false}
-                onChange={(e) => updateRentalApplication({ agreedToTerms: e.target.checked })}
-                className="mt-0.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
-              />
-              <span className="text-[11px] text-slate-600 dark:text-slate-300 leading-tight">
-                I confirm that all provided information is accurate and I agree to the{' '}
-                <span className="text-teal-600 dark:text-teal-400 font-bold underline">
-                  Standard Rental Terms
+            <div className="space-y-1.5">
+              <label className={`flex items-start gap-2.5 p-3 rounded-2xl bg-sky-50/40 dark:bg-slate-800/40 border ${errors.agreedToTerms ? 'border-red-500' : 'border-sky-100 dark:border-slate-700'} cursor-pointer`}>
+                <input
+                  type="checkbox"
+                  checked={rentalApplication.agreedToTerms || false}
+                  onChange={(e) => {
+                    updateRentalApplication({ agreedToTerms: e.target.checked });
+                    if (errors.agreedToTerms) setErrors(prev => ({ ...prev, agreedToTerms: '' }));
+                  }}
+                  className="mt-0.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                />
+                <span className="text-[11px] text-slate-600 dark:text-slate-300 leading-tight">
+                  I confirm that all provided information is accurate and I agree to the{' '}
+                  <span className="text-teal-600 dark:text-teal-400 font-bold underline">
+                    Standard Rental Terms
+                  </span>
+                  .
                 </span>
-                .
-              </span>
-            </label>
+              </label>
+              {errors.agreedToTerms && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.agreedToTerms}</p>}
+            </div>
           </div>
         </div>
 
         {/* Footer */}
         <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800 max-w-lg mx-auto w-full">
+          {loginErrors.general && (
+            <div className="mb-3 p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-xs font-bold text-red-600 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              <span>{loginErrors.general}</span>
+            </div>
+          )}
           <button
             type="button"
-            onClick={submitRentalApplication}
-            className="w-full py-3.5 px-5 rounded-2xl bg-slate-950 hover:bg-slate-850 dark:bg-teal-500 dark:hover:bg-teal-400 dark:text-slate-950 text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+            disabled={isLoggingIn}
+            onClick={async () => {
+              if (validateStep(4)) {
+                await submitRentalApplication();
+              }
+            }}
+            className="w-full py-3.5 px-5 rounded-2xl bg-slate-950 hover:bg-slate-850 dark:bg-teal-500 dark:hover:bg-teal-400 dark:text-slate-950 text-white font-extrabold text-sm shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <span>Submit Rental Request</span>
-            <Send className="w-4 h-4" />
+            {isLoggingIn ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" />
+                <span>Submitting...</span>
+              </>
+            ) : (
+              <>
+                <span>Submit Rental Request</span>
+                <Send className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
       </div>

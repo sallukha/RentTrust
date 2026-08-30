@@ -72,7 +72,7 @@ export const TenantProfileScreen: React.FC = () => {
 
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-black text-slate-900 dark:text-white truncate">
-              {currentUser?.fullName || 'Alex Chen'}
+              {currentUser?.fullName || 'User'}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 truncate mt-0.5">
               <Briefcase className="w-3 h-3 text-slate-400" />
@@ -265,7 +265,7 @@ export const TenantProfileScreen: React.FC = () => {
           className="w-full py-3.5 rounded-2xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
         >
           <LogOut className="w-4 h-4" />
-          <span>Sign Out of Alex Chen</span>
+          <span>Sign Out of {currentUser?.fullName?.split(' ')[0] || 'Account'}</span>
         </button>
       </div>
 

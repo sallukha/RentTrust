@@ -17,9 +17,9 @@ import {
   propertiesApi,
   rentRequestApi,
 } from '../api';
-import { toPropertyListings } from '../adapters/property.adapter';
+import { toPropertyListings, toPropertyListing } from '../adapters/property.adapter';
 import { toUserProfile } from '../adapters/user.adapter';
-import { PropertyQuery } from '../types/property.types';
+import { PropertyQuery, CreatePropertyRequest } from '../types/property.types';
 import {
   BackendRentRequest,
   CreateRentRequestPayload,
@@ -224,6 +224,11 @@ export const apiService = {
   async fetchPropertyById(id: string) {
     const result = await propertiesApi.getById(id);
     return toPropertyListings([result.data])[0];
+  },
+
+  async createProperty(payload: CreatePropertyRequest) {
+    const result = await propertiesApi.create(payload);
+    return toPropertyListing(result.data);
   },
 
   async forgotPassword(forgotIdentifier: string): Promise<{ success: boolean; message: string }> {

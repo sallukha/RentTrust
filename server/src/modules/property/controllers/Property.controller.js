@@ -19,7 +19,7 @@ export const getPropertyById = asyncHandler(async (req, res) => {
 })
 export const createProperty = asyncHandler(async (req, res) => {
     assertCanCreateProperty(req.user);
-    const {
+    let {
         title,
         description,
         address,
@@ -29,6 +29,22 @@ export const createProperty = asyncHandler(async (req, res) => {
         bathrooms,
         amenities
     } = req.body
+
+    // Parse JSON strings from FormData if necessary
+    if (typeof address === 'string') {
+        try {
+            address = JSON.parse(address);
+        } catch (error) {
+            throw new ApiError(400, 'Invalid address format');
+        }
+    }
+    if (typeof amenities === 'string') {
+        try {
+            amenities = JSON.parse(amenities);
+        } catch (error) {
+            throw new ApiError(400, 'Invalid amenities format');
+        }
+    }
 
     const imageFiles = req.files || [];
     if (imageFiles.length === 0) {
@@ -75,7 +91,18 @@ export const updateProperty = asyncHandler(async (req, res) => {
     ];
     allowedFields.forEach((field) => {
         if (req.body[field] !== undefined) {
-            property[field] = req.body[field];
+            let value = req.body[field];
+
+            // Parse JSON strings from FormData if necessary
+            if ((field === 'address' || field === 'amenities') && typeof value === 'string') {
+                try {
+                    value = JSON.parse(value);
+                } catch (error) {
+                    throw new ApiError(400, `Invalid ${field} format`);
+                }
+            }
+
+            property[field] = value;
         }
     })
     const imageFiles = req.files || [];

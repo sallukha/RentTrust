@@ -109,7 +109,7 @@ export const LandlordProfileScreen: React.FC = () => {
 
           {/* Landlord Name */}
           <h1 className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white tracking-tight">
-            Marcus Sterling
+            {currentUser?.fullName || 'Landlord'}
           </h1>
 
           {/* Subtitle */}
@@ -188,10 +188,10 @@ export const LandlordProfileScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* 3. About Marcus Section matching image 2 */}
+        {/* 3. About {currentUser?.fullName?.split(' ')[0] || 'Landlord'} Section matching image 2 */}
         <div className="space-y-2">
           <h3 className="text-base sm:text-lg font-bold text-slate-950 dark:text-white">
-            About Marcus
+            About {currentUser?.fullName?.split(' ')[0] || 'Landlord'}
           </h3>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal">
             Committed to providing high-quality urban living spaces with a focus on modern design and tenant comfort. My philosophy is built on clear communication and proactive maintenance to ensure a seamless living experience for every resident.
@@ -404,7 +404,7 @@ export const LandlordProfileScreen: React.FC = () => {
             className="w-full py-3 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-bold text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-800"
           >
             <MessageSquare className="w-4 h-4" />
-            <span>Send Direct Message to Marcus</span>
+            <span>Send Direct Message to {currentUser?.fullName?.split(' ')[0] || 'Landlord'}</span>
           </button>
 
           <button
@@ -413,7 +413,7 @@ export const LandlordProfileScreen: React.FC = () => {
             className="w-full py-3 rounded-2xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
-            <span>Sign Out of Marcus Sterling</span>
+            <span>Sign Out of {currentUser?.fullName || 'Account'}</span>
           </button>
         </div>
       </div>
@@ -439,7 +439,7 @@ export const LandlordProfileScreen: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <MessageSquare className="w-5 h-5 text-emerald-600" />
                   <h3 className="text-base font-black text-slate-900 dark:text-white">
-                    Direct Inquiry to Marcus
+                    Direct Inquiry to {currentUser?.fullName?.split(' ')[0] || 'Landlord'}
                   </h3>
                 </div>
                 <button
@@ -458,7 +458,7 @@ export const LandlordProfileScreen: React.FC = () => {
                     Inquiry Dispatched!
                   </h4>
                   <p className="text-xs text-slate-500">
-                    Marcus usually responds within 20 minutes (98% response rate).
+                    {currentUser?.fullName?.split(' ')[0] || 'Landlord'} usually responds within 20 minutes (98% response rate).
                   </p>
                 </div>
               ) : (

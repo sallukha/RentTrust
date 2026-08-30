@@ -23,6 +23,8 @@ import {
   Settings,
   ArrowRight,
   TrendingUp,
+  Loader,
+  AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
@@ -48,42 +50,76 @@ export const DashboardScreen: React.FC = () => {
   const [selectedTimeRange, setSelectedTimeRange] = useState<'Last 6 Months' | 'Last 3 Months' | 'Year to Date'>('Last 6 Months');
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'properties' | 'chat' | 'settings'>('dashboard');
+
+  // Dashboard Data State
   const [leases, setLeases] = useState<BackendLease[]>([]);
   const [invoices, setInvoices] = useState<BackendInvoice[]>([]);
-  const [isLeaseInvoiceLoading, setIsLeaseInvoiceLoading] = useState(false);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
 
     let mounted = true;
 
-    const loadLeaseAndInvoiceData = async () => {
-      setIsLeaseInvoiceLoading(true);
+    const loadDashboardData = async () => {
+      setIsDataLoading(true);
 
       try {
-        const [leaseResult, invoiceResult] = await Promise.all([
+        const [leaseResult, invoiceResult, propertyResult, requestResult] = await Promise.all([
           apiService.fetchMyLeases(),
           apiService.fetchMyInvoices(),
+          apiService.fetchLandlordProperties(currentUser.id),
+          apiService.fetchLandlordRentRequests()
         ]);
 
         if (!mounted) return;
 
         setLeases(leaseResult || []);
         setInvoices(invoiceResult || []);
+        setProperties(propertyResult.properties || []);
+
+        // Map backend requests to UI type
+        const mappedRequests: PendingRequest[] = (requestResult || []).map(req => {
+          // Extract property title if it's an object, otherwise use a string
+          let propTitle = 'Property';
+          if (req.propertyId && typeof req.propertyId === 'object' && 'title' in req.propertyId) {
+            propTitle = (req.propertyId as any).title;
+          } else if (typeof req.propertyId === 'string') {
+            propTitle = req.propertyId;
+          }
+
+          return {
+            id: req.id || req._id || '',
+            name: req.occupation || 'Applicant',
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+            property: propTitle,
+            leaseTerm: `${req.durationMonths || 12} mo`,
+            rep: 4.5,
+            salary: `$${(req.monthlyIncome || 0).toLocaleString()} / mo`,
+            creditScore: 750,
+            employment: req.organization || 'Independent',
+            status: req.status === 'rejected' ? 'declined' : (req.status as any) || 'pending',
+          };
+        });
+        setPendingRequests(mappedRequests);
       } catch (error) {
-        console.error('Failed to load lease and invoice data:', error);
+        console.error('Failed to load dashboard data:', error);
         if (mounted) {
           setLeases([]);
           setInvoices([]);
+          setProperties([]);
+          setPendingRequests([]);
         }
       } finally {
         if (mounted) {
-          setIsLeaseInvoiceLoading(false);
+          setIsDataLoading(false);
         }
       }
     };
 
-    loadLeaseAndInvoiceData();
+    loadDashboardData();
 
     return () => {
       mounted = false;
@@ -108,64 +144,33 @@ export const DashboardScreen: React.FC = () => {
 
   // Modal states
   const [reviewingApplicant, setReviewingApplicant] = useState<PendingRequest | null>(null);
-
   const [showListModal, setShowListModal] = useState(false);
   const [newPropertyTitle, setNewPropertyTitle] = useState('');
   const [newPropertyPrice, setNewPropertyPrice] = useState('');
   const [newPropertyLocation, setNewPropertyLocation] = useState('');
   const [propertyListedSuccess, setPropertyListedSuccess] = useState(false);
 
-  // Pending applicants list matching image
-  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([
-    {
-      id: 'req_1',
-      name: 'Jordan Smith',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      property: 'The Glass House',
-      leaseTerm: '2yr lease',
-      rep: 4.9,
-      salary: '$145,000 / yr',
-      creditScore: 785,
-      employment: 'Senior Software Architect at Stripe',
-      status: 'pending',
-    },
-    {
-      id: 'req_2',
-      name: 'Elena Rodriguez',
-      avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-      property: 'Urban Loft B-12',
-      leaseTerm: '1yr lease',
-      rep: 4.8,
-      salary: '$120,000 / yr',
-      creditScore: 760,
-      employment: 'Product Design Lead at Figma',
-      status: 'pending',
-    },
-    {
-      id: 'req_3',
-      name: 'The Millers',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      property: 'Sunset Villa',
-      leaseTerm: 'Multi-year',
-      rep: 4.9,
-      salary: '$210,000 / yr',
-      creditScore: 810,
-      employment: 'Physician & University Professor',
-      status: 'pending',
-    },
-  ]);
-
-  const handleApproveApplicant = (id: string) => {
-    setPendingRequests((prev) =>
-      prev.map((req) => (req.id === id ? { ...req, status: 'approved' } : req))
-    );
+  const handleApproveApplicant = async (id: string) => {
+    try {
+      await apiService.updateLandlordRentRequestStatus(id, 'approved');
+      setPendingRequests((prev) =>
+        prev.map((req) => (req.id === id ? { ...req, status: 'approved' } : req))
+      );
+    } catch (error) {
+      console.error('Failed to approve applicant:', error);
+    }
     setReviewingApplicant(null);
   };
 
-  const handleDeclineApplicant = (id: string) => {
-    setPendingRequests((prev) =>
-      prev.map((req) => (req.id === id ? { ...req, status: 'declined' } : req))
-    );
+  const handleDeclineApplicant = async (id: string) => {
+    try {
+      await apiService.updateLandlordRentRequestStatus(id, 'rejected');
+      setPendingRequests((prev) =>
+        prev.map((req) => (req.id === id ? { ...req, status: 'declined' } : req))
+      );
+    } catch (error) {
+      console.error('Failed to decline applicant:', error);
+    }
     setReviewingApplicant(null);
   };
 
@@ -193,7 +198,7 @@ export const DashboardScreen: React.FC = () => {
             WELCOME BACK
           </p>
           <h2 className="text-2xl sm:text-[28px] font-black tracking-tight text-slate-950 dark:text-white">
-            Good Morning, Alex
+            Good Morning, {currentUser?.fullName?.split(' ')[0] || 'User'}
           </h2>
         </div>
 
@@ -204,7 +209,7 @@ export const DashboardScreen: React.FC = () => {
               Active Rentals
             </span>
             <span className="text-4xl sm:text-5xl font-black tracking-tight leading-none text-white">
-              14
+              {isDataLoading ? '…' : properties.length}
             </span>
           </div>
 
@@ -229,7 +234,7 @@ export const DashboardScreen: React.FC = () => {
                 Active Leases
               </span>
               <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white tracking-tight">
-                {isLeaseInvoiceLoading ? '…' : activeLeaseCount}
+                {isDataLoading ? '…' : activeLeaseCount}
               </span>
             </div>
           </div>
@@ -244,7 +249,7 @@ export const DashboardScreen: React.FC = () => {
                 Unpaid Invoices
               </span>
               <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white tracking-tight">
-                {isLeaseInvoiceLoading ? '…' : payableInvoiceCount}
+                {isDataLoading ? '…' : payableInvoiceCount}
               </span>
             </div>
           </div>
@@ -265,7 +270,7 @@ export const DashboardScreen: React.FC = () => {
               </h3>
             </div>
             <div className="rounded-full bg-emerald-50 dark:bg-emerald-950/50 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
-              ${isLeaseInvoiceLoading ? '…' : activeMonthlyRevenue.toLocaleString()}
+              ${isDataLoading ? '…' : activeMonthlyRevenue.toLocaleString()}
             </div>
           </div>
 
@@ -393,52 +398,56 @@ export const DashboardScreen: React.FC = () => {
             </button>
           </div>
 
-          {/* List of 3 Requests matching image 1 */}
+          {/* List of Requests */}
           <div className="space-y-2.5">
-            {pendingRequests.map((req) => (
-              <div
-                key={req.id}
-                className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 shadow-xs flex items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
-              >
-                {/* Avatar with circular black star badge */}
-                <div className="relative flex-shrink-0">
-                  <img
-                    src={req.avatar}
-                    alt={req.name}
-                    referrerPolicy="no-referrer"
-                    className="w-12 h-12 rounded-xl object-cover"
-                  />
-                  <div className="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full bg-slate-950 text-white flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
-                    <Star className="w-2.5 h-2.5 fill-white text-white" />
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                      {req.name}
-                    </h4>
-                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
-                      {req.rep} Rep
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                    {req.property} &bull; {req.leaseTerm}
-                  </p>
-                </div>
-
-                {/* Review button matching image 1 */}
-                <button
-                  type="button"
-                  id={`review-btn-${req.id}`}
-                  onClick={() => setReviewingApplicant(req)}
-                  className="py-1.5 px-4 rounded-xl bg-[#E0EBFF] dark:bg-slate-800 hover:bg-[#D4E4FC] dark:hover:bg-slate-700 text-[#1E3A8A] dark:text-blue-300 text-xs font-bold transition-colors cursor-pointer flex-shrink-0"
+            {pendingRequests.length === 0 ? (
+              <p className="text-xs text-center py-6 text-slate-500 italic">No pending requests at the moment.</p>
+            ) : (
+              pendingRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className="p-3 sm:p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 shadow-xs flex items-center justify-between gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition-colors"
                 >
-                  {req.status === 'approved' ? 'Approved' : req.status === 'declined' ? 'Declined' : 'Review'}
-                </button>
-              </div>
-            ))}
+                  {/* Avatar with circular black star badge */}
+                  <div className="relative flex-shrink-0">
+                    <img
+                      src={req.avatar}
+                      alt={req.name}
+                      referrerPolicy="no-referrer"
+                      className="w-12 h-12 rounded-xl object-cover"
+                    />
+                    <div className="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full bg-slate-950 text-white flex items-center justify-center ring-2 ring-white dark:ring-slate-900">
+                      <Star className="w-2.5 h-2.5 fill-white text-white" />
+                    </div>
+                  </div>
+
+                  {/* Details */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                        {req.name}
+                      </h4>
+                      <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                        {req.rep} Rep
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                      {req.property} &bull; {req.leaseTerm}
+                    </p>
+                  </div>
+
+                  {/* Review button matching image 1 */}
+                  <button
+                    type="button"
+                    id={`review-btn-${req.id}`}
+                    onClick={() => setReviewingApplicant(req)}
+                    className="py-1.5 px-4 rounded-xl bg-[#E0EBFF] dark:bg-slate-800 hover:bg-[#D4E4FC] dark:hover:bg-slate-700 text-[#1E3A8A] dark:text-blue-300 text-xs font-bold transition-colors cursor-pointer flex-shrink-0"
+                  >
+                    {req.status === 'approved' ? 'Approved' : req.status === 'declined' ? 'Declined' : 'Review'}
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -670,6 +679,16 @@ export const DashboardScreen: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Global Loading Overlay */}
+      {isDataLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800">
+            <Loader className="w-8 h-8 animate-spin text-emerald-600 mx-auto" />
+            <p className="text-xs font-bold mt-2 text-slate-600 dark:text-slate-400">Updating Dashboard...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
