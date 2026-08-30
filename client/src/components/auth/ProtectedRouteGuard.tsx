@@ -95,7 +95,7 @@ export const ProtectedRouteGuard: React.FC<ProtectedRouteGuardProps> = ({
   }
 
   // 2. Check if user is in Tenant mode trying to access Landlord-only screens
-  if (requiredRole === 'landlord' && activeRole !== 'landlord') {
+  if (requiredRole === 'landlord' && activeRole !== 'landlord' && activeRole !== 'admin') {
     return (
       <div className="w-full max-w-md mx-auto p-6 space-y-6 text-center py-10 select-none">
         <div className="w-16 h-16 rounded-3xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto shadow-md ring-8 ring-indigo-500/10">
@@ -141,7 +141,7 @@ export const ProtectedRouteGuard: React.FC<ProtectedRouteGuardProps> = ({
   }
 
   // 3. Check if user is in Landlord mode trying to access Tenant-only screens
-  if (requiredRole === 'tenant' && activeRole !== 'tenant') {
+  if (requiredRole === 'tenant' && activeRole !== 'tenant' && activeRole !== 'admin') {
     return (
       <div className="w-full max-w-md mx-auto p-6 space-y-6 text-center py-10 select-none">
         <div className="w-16 h-16 rounded-3xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto shadow-md ring-8 ring-teal-500/10">
@@ -181,6 +181,29 @@ export const ProtectedRouteGuard: React.FC<ProtectedRouteGuardProps> = ({
           >
             Back to Landlord Dashboard
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (requiredRole === 'admin' && activeRole !== 'admin') {
+    return (
+      <div className="w-full max-w-md mx-auto p-6 space-y-6 text-center py-10 select-none">
+        <div className="w-16 h-16 rounded-3xl bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 flex items-center justify-center mx-auto shadow-md ring-8 ring-violet-500/10">
+          <ShieldCheck className="w-8 h-8" />
+        </div>
+
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-xs font-bold border border-violet-200 dark:border-violet-800">
+            <ShieldCheck className="w-3.5 h-3.5 text-violet-600" />
+            <span>Admin Access Required</span>
+          </div>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+            Switch to Admin Portal
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+            This section is restricted to platform administrators. Sign in as an admin to manage escalations, compliance, and marketplace operations.
+          </p>
         </div>
       </div>
     );

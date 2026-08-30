@@ -11,6 +11,7 @@ import { OtpVerificationScreen } from './OtpVerificationScreen';
 import { RegistrationCard } from './RegistrationCard';
 import { LoginScreen } from './LoginScreen';
 import { DashboardScreen } from './DashboardScreen';
+import { LeaseBillingScreen } from './LeaseBillingScreen';
 import { TenantHomeScreen } from './guest/TenantHomeScreen';
 import { GuestHomeScreen } from './guest/GuestHomeScreen';
 import { GuestExploreScreen } from './guest/GuestExploreScreen';
@@ -217,6 +218,22 @@ export const ScreenContainer: React.FC = () => {
               >
                 <ProtectedRouteGuard screenName="landlord-profile" requiresAuth={true} requiredRole="landlord">
                   <LandlordProfileScreen />
+                </ProtectedRouteGuard>
+              </motion.div>
+            )}
+
+            {/* Screen: Lease & Billing */}
+            {currentScreen === 'lease-billing' && (
+              <motion.div
+                key="screen-lease-billing"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                className="w-full"
+              >
+                <ProtectedRouteGuard screenName="lease-billing" requiresAuth={true} requiredRole="landlord">
+                  <LeaseBillingScreen />
                 </ProtectedRouteGuard>
               </motion.div>
             )}

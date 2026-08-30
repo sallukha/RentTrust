@@ -15,7 +15,6 @@ import {
   Minus,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { PROPERTY_LISTINGS } from '../../data/properties';
 import { PropertyListing } from '../../types';
 
 export const GuestExploreScreen: React.FC = () => {
@@ -26,6 +25,7 @@ export const GuestExploreScreen: React.FC = () => {
     searchFilterText,
     setSearchFilterText,
     setIsFilterModalOpen,
+    properties,
   } = useAuth();
 
   const [activeFilterChip, setActiveFilterChip] = useState<'price' | 'houseType' | 'bedsBaths' | 'amenities'>('price');
@@ -41,7 +41,7 @@ export const GuestExploreScreen: React.FC = () => {
     { id: 'amenities', label: 'Amenities' },
   ];
 
-  const filteredProperties = PROPERTY_LISTINGS.filter((prop) => {
+  const filteredProperties = properties.filter((prop) => {
     if (!searchFilterText) return true;
     return (
       prop.title.toLowerCase().includes(searchFilterText.toLowerCase()) ||
@@ -51,7 +51,7 @@ export const GuestExploreScreen: React.FC = () => {
   });
 
   const activeProperty =
-    PROPERTY_LISTINGS.find((p) => p.id === selectedMapPropId) || PROPERTY_LISTINGS[1];
+    properties.find((p) => p.id === selectedMapPropId) || properties[1] || properties[0];
 
   const handleGpsCenter = () => {
     setGpsCentered(true);
@@ -160,7 +160,7 @@ export const GuestExploreScreen: React.FC = () => {
         )}
 
         {/* Floating Price Pins matching Image 1 */}
-        {PROPERTY_LISTINGS.map((prop) => {
+        {properties.map((prop) => {
           const isSelected = selectedMapPropId === prop.id;
 
           return (

@@ -1,4 +1,4 @@
-export type ActiveUserRole = 'tenant' | 'landlord';
+export type ActiveUserRole = 'tenant' | 'landlord' | 'admin';
 
 export type RentalPurpose = 'residential' | 'work' | 'student';
 export type DocumentTypeId = 'drivers_license' | 'passport' | 'national_id';

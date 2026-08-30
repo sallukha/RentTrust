@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Bell,
@@ -25,26 +25,89 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { apiService } from '../services/api';
+import { BackendInvoice, BackendLease } from '../api';
+
+type PendingRequestStatus = 'pending' | 'approved' | 'declined';
+
+type PendingRequest = {
+  id: string;
+  name: string;
+  avatar: string;
+  property: string;
+  leaseTerm: string;
+  rep: number;
+  salary: string;
+  creditScore: number;
+  employment: string;
+  status: PendingRequestStatus;
+};
 
 export const DashboardScreen: React.FC = () => {
-  const { setCurrentScreen } = useAuth();
+  const { currentUser, setCurrentScreen } = useAuth();
   const [selectedTimeRange, setSelectedTimeRange] = useState<'Last 6 Months' | 'Last 3 Months' | 'Year to Date'>('Last 6 Months');
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'properties' | 'chat' | 'settings'>('dashboard');
+  const [leases, setLeases] = useState<BackendLease[]>([]);
+  const [invoices, setInvoices] = useState<BackendInvoice[]>([]);
+  const [isLeaseInvoiceLoading, setIsLeaseInvoiceLoading] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let mounted = true;
+
+    const loadLeaseAndInvoiceData = async () => {
+      setIsLeaseInvoiceLoading(true);
+
+      try {
+        const [leaseResult, invoiceResult] = await Promise.all([
+          apiService.fetchMyLeases(),
+          apiService.fetchMyInvoices(),
+        ]);
+
+        if (!mounted) return;
+
+        setLeases(leaseResult || []);
+        setInvoices(invoiceResult || []);
+      } catch (error) {
+        console.error('Failed to load lease and invoice data:', error);
+        if (mounted) {
+          setLeases([]);
+          setInvoices([]);
+        }
+      } finally {
+        if (mounted) {
+          setIsLeaseInvoiceLoading(false);
+        }
+      }
+    };
+
+    loadLeaseAndInvoiceData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [currentUser]);
+
+  const activeLeaseCount = leases.filter((lease) => lease.status === 'active').length;
+  const payableInvoiceCount = invoices.filter((invoice) => invoice.status === 'unpaid' || invoice.status === 'overdue').length;
+  const activeMonthlyRevenue = invoices.reduce((sum, invoice) => sum + (invoice.amountDue || 0), 0);
+  const recentLeaseInvoiceItems = [
+    ...leases.slice(0, 2).map((lease) => ({
+      title: `Lease ${lease.status || 'draft'}`,
+      detail: lease.propertyId ? `Property ${lease.propertyId}` : 'Property reference',
+      amount: lease.monthlyRent ? `$${lease.monthlyRent}` : '—',
+    })),
+    ...invoices.slice(0, 2).map((invoice) => ({
+      title: `Invoice ${invoice.invoiceNumber || 'draft'}`,
+      detail: invoice.status || 'unpaid',
+      amount: invoice.amountDue ? `$${invoice.amountDue}` : '—',
+    })),
+  ].slice(0, 4);
 
   // Modal states
-  const [reviewingApplicant, setReviewingApplicant] = useState<{
-    id: string;
-    name: string;
-    avatar: string;
-    property: string;
-    leaseTerm: string;
-    rep: number;
-    salary: string;
-    creditScore: number;
-    employment: string;
-    status: 'pending' | 'approved' | 'declined';
-  } | null>(null);
+  const [reviewingApplicant, setReviewingApplicant] = useState<PendingRequest | null>(null);
 
   const [showListModal, setShowListModal] = useState(false);
   const [newPropertyTitle, setNewPropertyTitle] = useState('');
@@ -53,7 +116,7 @@ export const DashboardScreen: React.FC = () => {
   const [propertyListedSuccess, setPropertyListedSuccess] = useState(false);
 
   // Pending applicants list matching image
-  const [pendingRequests, setPendingRequests] = useState([
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([
     {
       id: 'req_1',
       name: 'Jordan Smith',
@@ -64,7 +127,7 @@ export const DashboardScreen: React.FC = () => {
       salary: '$145,000 / yr',
       creditScore: 785,
       employment: 'Senior Software Architect at Stripe',
-      status: 'pending' as const,
+      status: 'pending',
     },
     {
       id: 'req_2',
@@ -76,7 +139,7 @@ export const DashboardScreen: React.FC = () => {
       salary: '$120,000 / yr',
       creditScore: 760,
       employment: 'Product Design Lead at Figma',
-      status: 'pending' as const,
+      status: 'pending',
     },
     {
       id: 'req_3',
@@ -88,7 +151,7 @@ export const DashboardScreen: React.FC = () => {
       salary: '$210,000 / yr',
       creditScore: 810,
       employment: 'Physician & University Professor',
-      status: 'pending' as const,
+      status: 'pending',
     },
   ]);
 
@@ -163,10 +226,10 @@ export const DashboardScreen: React.FC = () => {
             </div>
             <div>
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">
-                New Requests
+                Active Leases
               </span>
               <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white tracking-tight">
-                06
+                {isLeaseInvoiceLoading ? '…' : activeLeaseCount}
               </span>
             </div>
           </div>
@@ -178,14 +241,52 @@ export const DashboardScreen: React.FC = () => {
             </div>
             <div>
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-0.5">
-                Properties
+                Unpaid Invoices
               </span>
               <span className="text-2xl sm:text-3xl font-black text-slate-950 dark:text-white tracking-tight">
-                18
+                {isLeaseInvoiceLoading ? '…' : payableInvoiceCount}
               </span>
             </div>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setCurrentScreen('lease-billing')}
+          className="block w-full p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 shadow-xs text-left transition hover:border-emerald-200 dark:hover:border-emerald-800"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Lease & Billing
+              </p>
+              <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                Live portfolio snapshot
+              </h3>
+            </div>
+            <div className="rounded-full bg-emerald-50 dark:bg-emerald-950/50 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+              ${isLeaseInvoiceLoading ? '…' : activeMonthlyRevenue.toLocaleString()}
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            {recentLeaseInvoiceItems.length === 0 ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                No leases or invoices loaded yet.
+              </p>
+            ) : (
+              recentLeaseInvoiceItems.map((item, index) => (
+                <div key={`${item.title}-${index}`} className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/50 px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{item.title}</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{item.detail}</p>
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">{item.amount}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </button>
 
         {/* 3. Occupancy Rate Bar Chart Card matching image 1 */}
         <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 shadow-xs space-y-4">

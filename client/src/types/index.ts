@@ -1,5 +1,5 @@
-export type ProfileType = 'tenant' | 'landlord';
-export type ActiveUserRole = 'tenant' | 'landlord';
+export type ProfileType = 'tenant' | 'landlord' | 'admin';
+export type ActiveUserRole = 'tenant' | 'landlord' | 'admin';
 
 export interface RegistrationFormData {
   profileType: ProfileType;
@@ -112,7 +112,8 @@ export type AppScreen =
   | 'otp-verification'
   | 'dashboard'
   | 'landlord-profile'
-  | 'list-property';
+  | 'list-property'
+  | 'lease-billing';
 export type GuestBottomTab = 'home' | 'explore' | 'chat' | 'requests' | 'profile';
 
 export interface PropertyListing {
@@ -165,13 +166,13 @@ export interface PropertyReview {
 
 export interface LoginFormData {
   identifier: string; // email or phone number
-  password: string;
+  role: ProfileType;
   rememberDevice: boolean;
 }
 
 export interface LoginFormErrors {
   identifier?: string;
-  password?: string;
+  role?: string;
   general?: string;
 }
 

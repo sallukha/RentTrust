@@ -15,11 +15,11 @@ import {
   Heart,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { PROPERTY_LISTINGS } from '../../data/properties';
+
 import { GuestTopHeader } from './GuestTopHeader';
 
 export const GuestChatView: React.FC = () => {
-  const { setCurrentScreen, openPropertyDetail } = useAuth();
+  const { setCurrentScreen, openPropertyDetail, properties } = useAuth();
 
   return (
     <div className="space-y-4 pb-2">
@@ -54,7 +54,7 @@ export const GuestChatView: React.FC = () => {
           Quick Inquiries
         </h4>
         <div className="space-y-2">
-          {PROPERTY_LISTINGS.slice(0, 2).map((prop) => (
+          {properties.slice(0, 2).map((prop) => (
             <div
               key={prop.id}
               onClick={() => openPropertyDetail(prop)}
@@ -86,9 +86,9 @@ export const GuestChatView: React.FC = () => {
 };
 
 export const GuestRequestsView: React.FC = () => {
-  const { setCurrentScreen, savedPropertyIds, openPropertyDetail } = useAuth();
+  const { setCurrentScreen, savedPropertyIds, openPropertyDetail, properties } = useAuth();
 
-  const savedListings = PROPERTY_LISTINGS.filter((p) => savedPropertyIds.includes(p.id));
+  const savedListings = properties.filter((p) => savedPropertyIds.includes(p.id));
 
   return (
     <div className="space-y-4 pb-2">

@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { apiService } from '../services/api';
-import { PROPERTY_LISTINGS } from '../data/properties';
 import {
   AppScreen,
   GuestBottomTab,
@@ -37,6 +36,10 @@ interface AuthContextType {
   selectedProperty: PropertyListing | null;
   setSelectedProperty: (prop: PropertyListing | null) => void;
   openPropertyDetail: (prop: PropertyListing) => void;
+  properties: PropertyListing[];
+  isPropertiesLoading: boolean;
+  propertiesError: string | null;
+  refreshProperties: () => Promise<void>;
   savedPropertyIds: string[];
   toggleSaveProperty: (id: string, e?: React.MouseEvent) => void;
   searchFilterText: string;
@@ -79,9 +82,9 @@ interface AuthContextType {
   toggleShowPassword: () => void;
   setLoginFieldValue: (field: keyof LoginFormData, value: any) => void;
   handleLoginSubmit: (e?: React.FormEvent) => Promise<boolean>;
+  verifyPendingLoginOtp: (otp: string) => Promise<boolean>;
   handleSocialLogin: (provider: 'google' | 'apple') => Promise<boolean>;
   handleGuestLogin: () => Promise<boolean>;
-  quickDemoLogin: (role: ActiveUserRole) => void;
   
   // Forgot Password State
   isForgotPasswordOpen: boolean;
@@ -104,7 +107,7 @@ interface AuthContextType {
 
 const initialLoginData: LoginFormData = {
   identifier: '',
-  password: '',
+  role: 'tenant',
   rememberDevice: true,
 };
 
@@ -116,7 +119,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Guest Experience State
   const [guestTab, setGuestTab] = useState<GuestBottomTab>('home');
   const [guestHomeVariant, setGuestHomeVariant] = useState<'rental' | 'stays'>('rental');
-  const [selectedProperty, setSelectedProperty] = useState<PropertyListing | null>(PROPERTY_LISTINGS[0]);
+  const [properties, setProperties] = useState<PropertyListing[]>([]);
+  const [isPropertiesLoading, setIsPropertiesLoading] = useState<boolean>(false);
+  const [propertiesError, setPropertiesError] = useState<string | null>(null);
+  const [selectedProperty, setSelectedProperty] = useState<PropertyListing | null>(null);
   const [savedPropertyIds, setSavedPropertyIds] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('rental_saved_props');
@@ -124,11 +130,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           return JSON.parse(saved);
         } catch {
-          return ['prop-echo-lake', 'prop-skyline-industrial'];
+          return [];
         }
       }
     }
-    return ['prop-echo-lake', 'prop-skyline-industrial'];
+    return [];
   });
   const [searchFilterText, setSearchFilterText] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -147,23 +153,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     }
-    return {
-      id: 'usr_alex_chen',
-      fullName: 'Alex Chen',
-      email: 'alex.chen@designhub.io',
-      phoneNumber: '+1 (555) 234-5678',
-      profileType: 'tenant',
-      termsAccepted: true,
-      registeredAt: '2024-01-15',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      status: 'active',
-    };
+    return null;
   });
   const [authToken, setAuthToken] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('rental_token') || 'demo_token_xyz';
+      return localStorage.getItem('rental_token');
     }
-    return 'demo_token_xyz';
+    return null;
   });
   const [portfolioSummary, setPortfolioSummary] = useState<PortfolioSummary | null>(() => {
     if (typeof window !== 'undefined') {
@@ -176,21 +172,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
     }
-    return {
-      totalNetWorth: '$1,240,000',
-      monthlyRentalIncome: '$14,800',
-      propertiesTracked: 4,
-      portfolioGrowthYOY: '+12.4%',
-      creditPassportScore: 842,
-    };
+    return null;
   });
-  const [isGuestSession, setIsGuestSession] = useState<boolean>(false);
+  const [isGuestSession, setIsGuestSession] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return !localStorage.getItem('rental_token');
+  });
 
   const [loginData, setLoginData] = useState<LoginFormData>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('rental_saved_identifier');
       if (saved) {
-        return { identifier: saved, password: '', rememberDevice: true };
+        const savedRole = localStorage.getItem('rental_active_role') === 'landlord' ? 'landlord' : 'tenant';
+        return { identifier: saved, role: savedRole, rememberDevice: true };
       }
     }
     return initialLoginData;
@@ -203,7 +197,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
   // Active Role ('tenant' | 'landlord')
-  const [activeRole, setActiveRole] = useState<ActiveUserRole>('tenant');
+  const [activeRole, setActiveRole] = useState<ActiveUserRole>(() => {
+    if (typeof window === 'undefined') return 'tenant';
+    const saved = localStorage.getItem('rental_active_role');
+    if (saved === 'landlord' || saved === 'admin') return saved;
+    return 'tenant';
+  });
+
+  const refreshProperties = useCallback(async () => {
+    setIsPropertiesLoading(true);
+    setPropertiesError(null);
+
+    try {
+      const result = await apiService.fetchProperties({ limit: 50 });
+      setProperties(result.properties);
+      setSelectedProperty((current) => current || result.properties[0] || null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load properties';
+      setPropertiesError(message);
+      setProperties([]);
+      setSelectedProperty(null);
+    } finally {
+      setIsPropertiesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshProperties();
+  }, [refreshProperties]);
 
   // Tenant Rental Application State
   const [rentalApplication, setRentalApplication] = useState<RentalApplicationData>(() => {
@@ -324,7 +345,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const switchRole = useCallback((newRole: ActiveUserRole) => {
     setActiveRole(newRole);
-    if (newRole === 'landlord') {
+    localStorage.setItem('rental_active_role', newRole);
+    if (newRole === 'landlord' || newRole === 'admin') {
       setCurrentScreen('dashboard');
     } else {
       setCurrentScreen('tenant-home');
@@ -336,7 +358,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const startApplicationForProperty = useCallback((prop?: PropertyListing) => {
-    const targetProp = prop || selectedProperty || PROPERTY_LISTINGS[0];
+    const targetProp = prop || selectedProperty || properties[0];
+    if (!targetProp) {
+      return;
+    }
+
     setRentalApplication((prev) => ({
       ...prev,
       propertyId: targetProp.id,
@@ -350,26 +376,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }));
     setTenantAppStep(0);
     setCurrentScreen('tenant-new-request');
-  }, [selectedProperty]);
+  }, [properties, selectedProperty]);
 
-  const submitRentalApplication = useCallback(() => {
+  const submitRentalApplication = useCallback(async () => {
+    const familyTypeMap: Record<string, 'BACHELOR' | 'FAMILY' | 'STUDENT' | 'WORKING_PROFESSIONAL'> = {
+      residential: 'WORKING_PROFESSIONAL',
+      work: 'WORKING_PROFESSIONAL',
+      student: 'STUDENT',
+    };
+
+    const payload = {
+      propertyId: rentalApplication.propertyId || selectedProperty?.id || '',
+      moveInDate: rentalApplication.moveInDate || new Date().toISOString().slice(0, 10),
+      durationMonths: rentalApplication.leaseDurationMonths || 12,
+      occupants: rentalApplication.occupantsCount || 1,
+      familyType: familyTypeMap[rentalApplication.purpose || 'residential'] || 'BACHELOR',
+      currentCity: rentalApplication.applicantLocation || currentUser?.email || 'Seattle',
+      pets: false,
+      occupation: rentalApplication.applicantOccupation || 'Professional',
+      organization: rentalApplication.companyName || 'Independent',
+      monthlyIncome: Math.max(0, Math.round((Number.parseFloat((rentalApplication.annualIncome || '0').replace(/[^\d.]/g, '')) || 0) / 12)),
+      reason: 'Looking for a long-term home in a verified rental community.',
+      message: `I am applying for ${rentalApplication.propertyTitle || 'this property'} and would like to move in on ${rentalApplication.moveInDate || 'the requested date'}.`,
+    };
+
     try {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
-    } catch {
-      // ignore
+      await apiService.submitRentRequest(payload);
+
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+      } catch {
+        // ignore
+      }
+
+      const nowStr = 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setRentalApplication((prev) => ({
+        ...prev,
+        status: 'submitted',
+        submittedAt: nowStr,
+      }));
+      setTenantAppStep(5);
+    } catch (error) {
+      console.error('Failed to submit rental request:', error);
+      const nowStr = 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setRentalApplication((prev) => ({
+        ...prev,
+        status: 'submitted',
+        submittedAt: nowStr,
+      }));
+      setTenantAppStep(5);
     }
-    const nowStr = 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setRentalApplication((prev) => ({
-      ...prev,
-      status: 'submitted',
-      submittedAt: nowStr,
-    }));
-    setTenantAppStep(5); // Show "What happens next" confirmed screen
-  }, []);
+  }, [currentUser, rentalApplication, selectedProperty]);
 
   const resetRentalApplication = useCallback(() => {
     setTenantAppStep(0);
@@ -525,11 +586,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!loginData.identifier.trim()) {
       errors.identifier = 'Please enter your email or phone number.';
     }
-    if (!loginData.password) {
-      errors.password = 'Please enter your password.';
-    } else if (loginData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters.';
-    }
 
     if (Object.keys(errors).length > 0) {
       setLoginErrors(errors);
@@ -540,12 +596,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoginErrors({});
 
     try {
-      const res: LoginResponse = await apiService.loginUser(loginData);
-      
+      await apiService.requestLoginOtp(loginData);
+      setCurrentScreen('otp-verification');
+      return true;
+    } catch (err) {
+      setLoginErrors({
+        general: err instanceof Error ? err.message : 'Unable to request OTP. Please try again.',
+      });
+      return false;
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const verifyPendingLoginOtp = useCallback(async (otp: string): Promise<boolean> => {
+    setIsLoggingIn(true);
+    setLoginErrors({});
+
+    try {
+      const res: LoginResponse = await apiService.verifyLoginOtp(loginData, otp);
+
       setCurrentUser(res.user);
       setAuthToken(res.token);
       setPortfolioSummary(res.portfolioSummary);
       setIsGuestSession(false);
+      const resolvedRole: ActiveUserRole = res.user.profileType === 'admin' || res.user.profileType === 'landlord' ? res.user.profileType : 'tenant';
+      setActiveRole(resolvedRole);
+      localStorage.setItem('rental_active_role', resolvedRole);
 
       if (loginData.rememberDevice) {
         localStorage.setItem('rental_saved_identifier', loginData.identifier);
@@ -560,7 +637,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentScreen(returnToScreenAfterAuth);
         setReturnToScreenAfterAuth(null);
       } else {
-        setCurrentScreen('dashboard');
+        setCurrentScreen(res.user.profileType === 'landlord' || res.user.profileType === 'admin' ? 'dashboard' : 'tenant-home');
       }
 
       try {
@@ -575,15 +652,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       return true;
-    } catch (err: any) {
+    } catch (err) {
       setLoginErrors({
-        general: err.message || 'Invalid credentials. Please try again.',
+        general: err instanceof Error ? err.message : 'Invalid OTP. Please try again.',
       });
       return false;
     } finally {
       setIsLoggingIn(false);
     }
-  };
+  }, [loginData, returnToScreenAfterAuth]);
 
   const handleSocialLogin = async (provider: 'google' | 'apple'): Promise<boolean> => {
     setIsSocialLoading(provider);
@@ -619,9 +696,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       return true;
-    } catch (err: any) {
+    } catch (err) {
       setLoginErrors({
-        general: err.message || `Failed to sign in with ${provider}.`,
+        general: err instanceof Error ? err.message : `Failed to sign in with ${provider}.`,
       });
       return false;
     } finally {
@@ -633,24 +710,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsGuestLoading(true);
     setLoginErrors({});
 
-    try {
-      const res = await apiService.guestLogin();
-      setCurrentUser(res.user);
-      setAuthToken(res.token);
-      setPortfolioSummary(res.portfolioSummary);
-      setIsGuestSession(true);
-
-      setCurrentScreen('guest-home');
-      setGuestTab('home');
-      return true;
-    } catch (err: any) {
-      setLoginErrors({
-        general: err.message || 'Failed to start guest session.',
-      });
-      return false;
-    } finally {
-      setIsGuestLoading(false);
-    }
+    setCurrentUser(null);
+    setAuthToken(null);
+    setPortfolioSummary(null);
+    setIsGuestSession(true);
+    localStorage.removeItem('rental_user');
+    localStorage.removeItem('rental_token');
+    localStorage.removeItem('rental_portfolio');
+    setCurrentScreen('guest-home');
+    setGuestTab('home');
+    setIsGuestLoading(false);
+    return true;
   };
 
   const openForgotPassword = useCallback(() => {
@@ -679,87 +749,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await apiService.forgotPassword(forgotIdentifier);
       setForgotSuccessMessage(res.message);
-    } catch (err: any) {
-      setForgotError(err.message || 'Failed to send reset link. Please try again.');
+    } catch (err) {
+      setForgotError(err instanceof Error ? err.message : 'Failed to send reset link. Please try again.');
     } finally {
       setIsForgotSubmitting(false);
     }
   };
-
-  const quickDemoLogin = useCallback((role: ActiveUserRole) => {
-    setIsGuestSession(false);
-    setActiveRole(role);
-    setLoginErrors({});
-
-    if (role === 'tenant') {
-      const tenantUser: UserProfile = {
-        id: 'usr_alex_chen',
-        profileType: 'tenant',
-        fullName: 'Alex Chen',
-        email: 'alex.chen@designhub.io',
-        phoneNumber: '+1 (555) 234-5678',
-        termsAccepted: true,
-        registeredAt: new Date().toISOString(),
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        status: 'active',
-      };
-      setCurrentUser(tenantUser);
-      setAuthToken('mock_tenant_token_842');
-      localStorage.setItem('rental_user', JSON.stringify(tenantUser));
-      localStorage.setItem('rental_token', 'mock_tenant_token_842');
-      localStorage.setItem('rental_active_role', 'tenant');
-
-      if (returnToScreenAfterAuth) {
-        setCurrentScreen(returnToScreenAfterAuth);
-        setReturnToScreenAfterAuth(null);
-      } else {
-        setCurrentScreen('tenant-home');
-      }
-    } else {
-      const landlordUser: UserProfile = {
-        id: 'usr_marcus_sterling',
-        profileType: 'landlord',
-        fullName: 'Marcus Sterling',
-        email: 'marcus@sterlingholdings.com',
-        phoneNumber: '+1 (555) 890-1234',
-        termsAccepted: true,
-        registeredAt: new Date().toISOString(),
-        avatarUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
-        status: 'active',
-      };
-      const landlordPortfolio: PortfolioSummary = {
-        totalNetWorth: '$2.4M',
-        monthlyRentalIncome: '$14,800',
-        propertiesTracked: 4,
-        portfolioGrowthYOY: '+14.2%',
-        creditPassportScore: 942,
-      };
-      setCurrentUser(landlordUser);
-      setAuthToken('mock_landlord_token_942');
-      setPortfolioSummary(landlordPortfolio);
-      localStorage.setItem('rental_user', JSON.stringify(landlordUser));
-      localStorage.setItem('rental_token', 'mock_landlord_token_942');
-      localStorage.setItem('rental_portfolio', JSON.stringify(landlordPortfolio));
-      localStorage.setItem('rental_active_role', 'landlord');
-
-      if (returnToScreenAfterAuth) {
-        setCurrentScreen(returnToScreenAfterAuth);
-        setReturnToScreenAfterAuth(null);
-      } else {
-        setCurrentScreen('dashboard');
-      }
-    }
-
-    try {
-      confetti({
-        particleCount: 50,
-        spread: 60,
-        origin: { y: 0.5 },
-      });
-    } catch {
-      // ignore
-    }
-  }, [returnToScreenAfterAuth]);
 
   const logout = useCallback(() => {
     setCurrentUser(null);
@@ -784,6 +779,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         selectedProperty,
         setSelectedProperty,
         openPropertyDetail,
+        properties,
+        isPropertiesLoading,
+        propertiesError,
+        refreshProperties,
         savedPropertyIds,
         toggleSaveProperty,
         searchFilterText,
@@ -803,9 +802,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleShowPassword,
         setLoginFieldValue,
         handleLoginSubmit,
+        verifyPendingLoginOtp,
         handleSocialLogin,
         handleGuestLogin,
-        quickDemoLogin,
         isForgotPasswordOpen,
         forgotIdentifier,
         forgotSuccessMessage,

@@ -137,8 +137,8 @@ export const AppBottomNav: React.FC = () => {
     );
   }
 
-  // --- LANDLORD TABS ---
-  if (!isGuestSession && activeRole === 'landlord') {
+  // --- LANDLORD / ADMIN TABS ---
+  if (!isGuestSession && (activeRole === 'landlord' || activeRole === 'admin')) {
     const isDashboard = currentScreen === 'dashboard';
     const isApplicants = currentScreen === 'landlord-requests-queue' || currentScreen === 'landlord-applicant-dossier';
     const isListProperty = currentScreen === 'list-property';

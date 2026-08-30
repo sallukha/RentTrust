@@ -22,10 +22,10 @@ import {
   Building2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { PROPERTY_LISTINGS } from '../data/properties';
+
 
 export const LandlordProfileScreen: React.FC = () => {
-  const { setCurrentScreen, openPropertyDetail, activeRole, switchRole, logout, currentUser } = useAuth();
+  const { setCurrentScreen, openPropertyDetail, activeRole, switchRole, logout, currentUser, properties } = useAuth();
   const [feedbackIndex, setFeedbackIndex] = useState(0);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageText, setMessageText] = useState('');
@@ -218,7 +218,7 @@ export const LandlordProfileScreen: React.FC = () => {
             {/* Card 1: The Skylark Loft */}
             <div
               onClick={() => {
-                openPropertyDetail(PROPERTY_LISTINGS[0]);
+                if (properties[0]) openPropertyDetail(properties[0]);
               }}
               className="rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs cursor-pointer group hover:border-slate-300 dark:hover:border-slate-700 transition-all"
             >
@@ -246,7 +246,7 @@ export const LandlordProfileScreen: React.FC = () => {
             {/* Card 2: Hudson Garden Ste. */}
             <div
               onClick={() => {
-                openPropertyDetail(PROPERTY_LISTINGS[1] || PROPERTY_LISTINGS[0]);
+                if (properties[1] || properties[0]) openPropertyDetail(properties[1] || properties[0]);
               }}
               className="rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs cursor-pointer group hover:border-slate-300 dark:hover:border-slate-700 transition-all"
             >

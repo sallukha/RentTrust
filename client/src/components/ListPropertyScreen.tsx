@@ -38,9 +38,11 @@ import {
   PawPrint,
   Users,
   Info,
+  Loader,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { PropertyListing } from '../types';
+import { apiService } from '../services/api';
 
 export interface ListPropertyFormData {
   // Step 1: Basic Details
@@ -53,12 +55,15 @@ export interface ListPropertyFormData {
   city: string;
   zipCode: string;
   
-  // Step 2: Photos
-  coverPhoto: string;
-  livingRoomPhoto: string;
-  kitchenPhoto: string;
-  bedroomPhoto: string;
-  bathroomPhoto: string;
+  // Step 2: Photos - Store both preview URL and File object
+  coverPhotoFile: File | null;
+  coverPhotoPreview: string;
+  livingRoomPhotoFile: File | null;
+  livingRoomPhotoPreview: string;
+  kitchenPhotoFile: File | null;
+  kitchenPhotoPreview: string;
+  bedroomPhotoFile: File | null;
+  bedroomPhotoPreview: string;
 
   // Step 3: Amenities
   coreAmenities: {
@@ -128,6 +133,8 @@ export const ListPropertyScreen: React.FC = () => {
   const [customHighlightInput, setCustomHighlightInput] = useState('');
   const [isAiGenerating, setIsAiGenerating] = useState(false);
   const [isPublishedModalOpen, setIsPublishedModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [activeBottomNav, setActiveBottomNav] = useState<'dashboard' | 'properties' | 'requests' | 'messages' | 'menu'>('properties');
 
   const [formData, setFormData] = useState<ListPropertyFormData>({
@@ -139,11 +146,14 @@ export const ListPropertyScreen: React.FC = () => {
     address: '123 Horizon Ave, Apt 4B',
     city: 'Seattle',
     zipCode: '98101',
-    coverPhoto: SAMPLE_IMAGES.cover,
-    livingRoomPhoto: SAMPLE_IMAGES.livingRoom,
-    kitchenPhoto: SAMPLE_IMAGES.kitchen,
-    bedroomPhoto: SAMPLE_IMAGES.bedroom,
-    bathroomPhoto: SAMPLE_IMAGES.bathroom,
+    coverPhotoFile: null,
+    coverPhotoPreview: SAMPLE_IMAGES.cover,
+    livingRoomPhotoFile: null,
+    livingRoomPhotoPreview: SAMPLE_IMAGES.livingRoom,
+    kitchenPhotoFile: null,
+    kitchenPhotoPreview: SAMPLE_IMAGES.kitchen,
+    bedroomPhotoFile: null,
+    bedroomPhotoPreview: SAMPLE_IMAGES.bedroom,
     coreAmenities: {
       wifi: true,
       ac: true,
@@ -230,57 +240,80 @@ export const ListPropertyScreen: React.FC = () => {
     }
   };
 
-  const handlePublish = () => {
-    const newProperty: PropertyListing = {
-      id: `prop_custom_${Date.now()}`,
-      title: formData.descriptionTitle || formData.title,
-      shortTitle: formData.title,
-      type: 'rental',
-      badgeType: 'trusted-landlord',
-      badgeLabel: 'Verified Title',
-      location: `${formData.address}, ${formData.city}`,
-      city: formData.city || 'Seattle',
-      neighborhood: 'Downtown Horizon',
-      price: `$${Number(formData.monthlyRent).toLocaleString()}`,
-      priceNumeric: Number(formData.monthlyRent) || 2400,
-      priceUnit: '/month',
-      rating: 5.0,
-      reviewCount: 1,
-      beds: Number(formData.bedrooms) || 2,
-      baths: Number(formData.bathrooms) || 1.5,
-      sqft: Number(formData.sqft) || 1200,
-      images: [
-        formData.coverPhoto || SAMPLE_IMAGES.cover,
-        formData.livingRoomPhoto || SAMPLE_IMAGES.livingRoom,
-        formData.kitchenPhoto || SAMPLE_IMAGES.kitchen,
-        formData.bedroomPhoto || SAMPLE_IMAGES.bedroom,
-      ],
-      description: formData.detailedDescription,
-      amenities: [
-        { id: 'am_1', name: 'Fast WiFi', icon: 'Wifi' },
-        { id: 'am_2', name: 'Air Conditioning', icon: 'Snowflake' },
-        { id: 'am_3', name: 'Free Parking', icon: 'Car' },
-        { id: 'am_4', name: 'In-unit Laundry', icon: 'Building2' },
-      ],
-      host: {
-        name: 'Alex Vance',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        reputation: '4.98',
-        verified: true,
-        responseRate: '100%',
-      },
-      coordinates: {
-        lat: 47.6062,
-        lng: -122.3321,
-        mapX: 48,
-        mapY: 52,
-      },
-      priceTag: `$${Number(formData.monthlyRent).toLocaleString()}`,
-      isSaved: false,
+  const handleImageUpload = (field: 'coverPhoto' | 'livingRoomPhoto' | 'kitchenPhoto' | 'bedroomPhoto', file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const preview = e.target?.result as string;
+      setFormData((prev) => ({
+        ...prev,
+        [`${field}File`]: file,
+        [`${field}Preview`]: preview,
+      } as any));
     };
+    reader.readAsDataURL(file);
+  };
 
-    setSelectedProperty(newProperty);
-    setIsPublishedModalOpen(true);
+  const handlePublish = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      // Collect the image files - use at least one for upload
+      const imageFiles: File[] = [];
+      if (formData.coverPhotoFile) imageFiles.push(formData.coverPhotoFile);
+      if (formData.livingRoomPhotoFile) imageFiles.push(formData.livingRoomPhotoFile);
+      if (formData.kitchenPhotoFile) imageFiles.push(formData.kitchenPhotoFile);
+      if (formData.bedroomPhotoFile) imageFiles.push(formData.bedroomPhotoFile);
+
+      if (imageFiles.length === 0) {
+        setSubmitError('Please upload at least one property photo');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Prepare the property data
+      const amenities = [];
+      if (formData.coreAmenities.wifi) amenities.push('WiFi');
+      if (formData.coreAmenities.ac) amenities.push('Air Conditioning');
+      if (formData.coreAmenities.heating) amenities.push('Heating');
+      if (formData.coreAmenities.parking) amenities.push('Parking');
+      if (formData.coreAmenities.laundry) amenities.push('In-unit Laundry');
+
+      // Call the API to create the property
+      const property = await apiService.createProperty({
+        title: formData.title,
+        description: formData.detailedDescription,
+        address: {
+          street: formData.address,
+          city: formData.city,
+          state: 'WA',
+          zipCode: formData.zipCode,
+          country: 'USA',
+        },
+        pricePerMonth: Number(formData.monthlyRent),
+        securityDeposit: Number(formData.securityDeposit),
+        bedrooms: Number(formData.bedrooms),
+        bathrooms: Number(formData.bathrooms),
+        amenities,
+        images: imageFiles,
+      });
+
+      // Show success modal
+      setIsPublishedModalOpen(true);
+
+      // Reset form after a delay
+      setTimeout(() => {
+        setIsPublishedModalOpen(false);
+        setCurrentScreen('dashboard');
+      }, 3000);
+    } catch (error: any) {
+      console.error('Failed to create property:', error);
+      setSubmitError(
+        error.message || 'Failed to create property. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Progress percentage calculation
@@ -560,17 +593,27 @@ export const ListPropertyScreen: React.FC = () => {
                 <label className="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
                   Cover Photo
                 </label>
-                {formData.coverPhoto ? (
+                {formData.coverPhotoPreview ? (
                   <div className="relative h-48 rounded-3xl overflow-hidden border-2 border-emerald-500/40 shadow-sm group">
                     <img
-                      src={formData.coverPhoto}
+                      src={formData.coverPhotoPreview}
                       alt="Cover Preview"
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <input
+                        type="file"
+                        id="coverPhotoInput"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload('coverPhoto', file);
+                        }}
+                        className="hidden"
+                      />
                       <button
                         type="button"
-                        onClick={() => setFormData({ ...formData, coverPhoto: SAMPLE_IMAGES.cover })}
+                        onClick={() => document.getElementById('coverPhotoInput')?.click()}
                         className="px-3 py-1.5 rounded-xl bg-white text-slate-900 text-xs font-bold shadow-md cursor-pointer hover:bg-slate-100"
                       >
                         Change
@@ -581,10 +624,17 @@ export const ListPropertyScreen: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div
-                    onClick={() => setFormData({ ...formData, coverPhoto: SAMPLE_IMAGES.cover })}
-                    className="h-44 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 flex flex-col items-center justify-center gap-2 text-center p-4 cursor-pointer hover:border-emerald-500 transition-colors"
-                  >
+                  <div className="h-44 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 flex flex-col items-center justify-center gap-2 text-center p-4 cursor-pointer hover:border-emerald-500 transition-colors relative">
+                    <input
+                      type="file"
+                      id="coverPhotoInput"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload('coverPhoto', file);
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
                     <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 flex items-center justify-center shadow-xs text-slate-700 dark:text-slate-300">
                       <ImageIcon className="w-6 h-6" />
                     </div>
@@ -609,13 +659,20 @@ export const ListPropertyScreen: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-3">
                   {/* Living Room */}
-                  <div
-                    onClick={() => setFormData({ ...formData, livingRoomPhoto: SAMPLE_IMAGES.livingRoom })}
-                    className="h-32 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 relative overflow-hidden flex flex-col items-center justify-center gap-1 cursor-pointer group"
-                  >
-                    {formData.livingRoomPhoto ? (
+                  <div className="h-32 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 relative overflow-hidden flex flex-col items-center justify-center gap-1 cursor-pointer group">
+                    <input
+                      type="file"
+                      id="livingRoomInput"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload('livingRoomPhoto', file);
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    {formData.livingRoomPhotoPreview ? (
                       <img
-                        src={formData.livingRoomPhoto}
+                        src={formData.livingRoomPhotoPreview}
                         alt="Living Room"
                         className="w-full h-full object-cover"
                       />
@@ -633,13 +690,20 @@ export const ListPropertyScreen: React.FC = () => {
                   </div>
 
                   {/* Kitchen */}
-                  <div
-                    onClick={() => setFormData({ ...formData, kitchenPhoto: SAMPLE_IMAGES.kitchen })}
-                    className="h-32 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 relative overflow-hidden flex flex-col items-center justify-center gap-1 cursor-pointer group"
-                  >
-                    {formData.kitchenPhoto ? (
+                  <div className="h-32 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 relative overflow-hidden flex flex-col items-center justify-center gap-1 cursor-pointer group">
+                    <input
+                      type="file"
+                      id="kitchenInput"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload('kitchenPhoto', file);
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    {formData.kitchenPhotoPreview ? (
                       <img
-                        src={formData.kitchenPhoto}
+                        src={formData.kitchenPhotoPreview}
                         alt="Kitchen"
                         className="w-full h-full object-cover"
                       />
@@ -657,13 +721,20 @@ export const ListPropertyScreen: React.FC = () => {
                   </div>
 
                   {/* Bedroom */}
-                  <div
-                    onClick={() => setFormData({ ...formData, bedroomPhoto: SAMPLE_IMAGES.bedroom })}
-                    className="h-32 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 relative overflow-hidden flex flex-col items-center justify-center gap-1 cursor-pointer group"
-                  >
-                    {formData.bedroomPhoto ? (
+                  <div className="h-32 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 relative overflow-hidden flex flex-col items-center justify-center gap-1 cursor-pointer group">
+                    <input
+                      type="file"
+                      id="bedroomInput"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload('bedroomPhoto', file);
+                      }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                    {formData.bedroomPhotoPreview ? (
                       <img
-                        src={formData.bedroomPhoto}
+                        src={formData.bedroomPhotoPreview}
                         alt="Bedroom"
                         className="w-full h-full object-cover"
                       />
@@ -680,28 +751,12 @@ export const ListPropertyScreen: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Bathroom */}
-                  <div
-                    onClick={() => setFormData({ ...formData, bathroomPhoto: SAMPLE_IMAGES.bathroom })}
-                    className="h-32 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 relative overflow-hidden flex flex-col items-center justify-center gap-1 cursor-pointer group"
-                  >
-                    {formData.bathroomPhoto ? (
-                      <img
-                        src={formData.bathroomPhoto}
-                        alt="Bathroom"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <>
-                        <Plus className="w-5 h-5 text-slate-400" />
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                          Bathroom
-                        </span>
-                      </>
-                    )}
-                    <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-[10px] text-white font-bold">
-                      Bathroom
-                    </div>
+                  {/* Placeholder for 4th photo */}
+                  <div className="h-32 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-100/70 dark:bg-slate-900/60 relative overflow-hidden flex flex-col items-center justify-center gap-1 cursor-pointer group">
+                    <Plus className="w-5 h-5 text-slate-400" />
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      +2 more
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1736,7 +1791,7 @@ export const ListPropertyScreen: React.FC = () => {
 
       {/* Celebration Modal on Successful Publish */}
       <AnimatePresence>
-        {isPublishedModalOpen && (
+        {(isPublishedModalOpen || isSubmitting) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
@@ -1750,58 +1805,103 @@ export const ListPropertyScreen: React.FC = () => {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-3xl p-6 text-center space-y-4 shadow-2xl border border-slate-200 dark:border-slate-800 z-10"
             >
-              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 mx-auto flex items-center justify-center">
-                <ShieldCheck className="w-8 h-8" />
-              </div>
+              {isSubmitting ? (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 mx-auto flex items-center justify-center animate-spin">
+                    <Loader className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                      Creating Property...
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                      Uploading images to Cloudinary and saving to database...
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 mx-auto flex items-center justify-center">
+                    <ShieldCheck className="w-8 h-8" />
+                  </div>
 
-              <div className="space-y-1">
-                <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                  Property Submitted!
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Your property <strong className="text-slate-800 dark:text-slate-200">{formData.title}</strong> has been encrypted and submitted for automated title verification.
-                </p>
-              </div>
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                      Property Created! ✨
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                      Your property <strong className="text-slate-800 dark:text-slate-200">{formData.title}</strong> has been successfully listed on RentalTrust.
+                    </p>
+                  </div>
 
-              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 text-left text-xs space-y-1.5 border border-slate-200/60 dark:border-slate-700">
-                <div className="flex justify-between">
-                  <span className="text-slate-500 font-medium">Rent</span>
-                  <span className="font-bold text-slate-900 dark:text-white">
-                    ${Number(formData.monthlyRent).toLocaleString()} / mo
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500 font-medium">Escrow Security</span>
-                  <span className="font-bold text-emerald-600">Active Verified</span>
-                </div>
-              </div>
+                  <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800 text-left text-xs space-y-1.5 border border-slate-200/60 dark:border-slate-700">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 font-medium">Monthly Rent</span>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        ${Number(formData.monthlyRent).toLocaleString()} / mo
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 font-medium">Bedrooms</span>
+                      <span className="font-bold text-slate-900 dark:text-white">
+                        {formData.bedrooms}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500 font-medium">Location</span>
+                      <span className="font-bold text-emerald-600">{formData.city}</span>
+                    </div>
+                  </div>
 
-              <div className="flex flex-col gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsPublishedModalOpen(false);
-                    setCurrentScreen('dashboard');
-                  }}
-                  className="w-full py-3.5 rounded-2xl bg-slate-950 dark:bg-emerald-600 text-white font-bold text-xs hover:bg-slate-850 dark:hover:bg-emerald-500 transition-colors cursor-pointer"
-                >
-                  View in Landlord Dashboard
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsPublishedModalOpen(false);
-                    setCurrentScreen('guest-home');
-                  }}
-                  className="w-full py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                >
-                  Browse Stays Marketplace
-                </button>
-              </div>
+                  <div className="flex flex-col gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsPublishedModalOpen(false);
+                        setCurrentScreen('dashboard');
+                      }}
+                      className="w-full py-3.5 rounded-2xl bg-slate-950 dark:bg-emerald-600 text-white font-bold text-xs hover:bg-slate-850 dark:hover:bg-emerald-500 transition-colors cursor-pointer"
+                    >
+                      View in Landlord Dashboard
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsPublishedModalOpen(false);
+                        setCurrentScreen('guest-home');
+                      }}
+                      className="w-full py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                    >
+                      Browse Marketplace
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* Error Alert */}
+      {submitError && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="fixed top-4 left-4 right-4 z-40 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 flex items-start gap-3"
+        >
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-bold text-red-900 dark:text-red-200">{submitError}</p>
+          </div>
+          <button
+            onClick={() => setSubmitError(null)}
+            className="text-red-600 hover:text-red-700 flex-shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </motion.div>
+      )}
     </div>
   );
 };

@@ -24,7 +24,6 @@ import {
   Compass,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { PROPERTY_LISTINGS } from '../../data/properties';
 import { PropertyListing } from '../../types';
 
 export const TenantHomeScreen: React.FC = () => {
@@ -36,6 +35,7 @@ export const TenantHomeScreen: React.FC = () => {
     setSearchFilterText,
     setGuestTab,
     currentUser,
+    properties,
   } = useAuth();
 
   // Modals state
@@ -45,16 +45,16 @@ export const TenantHomeScreen: React.FC = () => {
   const [activeSearchTag, setActiveSearchTag] = useState<string | null>(null);
 
   // Filter saved properties or fallback to the two reference properties
-  const dumboLoft = PROPERTY_LISTINGS.find((p) => p.id === 'prop-dumbo-industrial') || PROPERTY_LISTINGS[0];
-  const greenwichTownhouse = PROPERTY_LISTINGS.find((p) => p.id === 'prop-greenwich-townhouse') || PROPERTY_LISTINGS[1];
+  const dumboLoft = properties.find((p) => p.id === 'prop-dumbo-industrial') || properties[0];
+  const greenwichTownhouse = properties.find((p) => p.id === 'prop-greenwich-townhouse') || properties[1];
 
-  const savedDisplayList: PropertyListing[] = [
-    dumboLoft,
-    greenwichTownhouse,
-    ...PROPERTY_LISTINGS.filter(
-      (p) => savedPropertyIds.includes(p.id) && p.id !== dumboLoft.id && p.id !== greenwichTownhouse.id
+  const savedDisplayList: PropertyListing[] = properties.length > 0 ? [
+    ...(dumboLoft ? [dumboLoft] : []),
+    ...(greenwichTownhouse ? [greenwichTownhouse] : []),
+    ...properties.filter(
+      (p) => savedPropertyIds.includes(p.id) && p.id !== dumboLoft?.id && p.id !== greenwichTownhouse?.id
     ),
-  ].slice(0, 4);
+  ].slice(0, 4) : [];
 
   // Recent searches list matching image
   const recentSearches = [

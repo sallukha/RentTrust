@@ -10,12 +10,16 @@ import { ApiError } from "../../../utils/apiError.js"
  * Supported query params: city, minPrice, maxPrice, bedrooms, propertyType, status
  */
 export const searchProperties = async (query) => {
-  const { city, minPrice, maxPrice, bedrooms, status, page = 1, limit = 20 } = query;
+  const { city, minPrice, maxPrice, bedrooms, status, landlordId, page = 1, limit = 20 } = query;
 
   const filter = {};
 
   if (city) {
     filter['address.city'] = { $regex: city, $options: 'i' }; // case-insensitive partial match
+  }
+
+  if (landlordId) {
+    filter.landlordId = landlordId;
   }
 
   if (minPrice || maxPrice) {
@@ -28,8 +32,13 @@ export const searchProperties = async (query) => {
     filter.bedrooms = Number(bedrooms);
   }
 
-  // Public search only shows available listings unless a specific status is requested
-  filter.status = status || 'available';
+  // If filtering by landlordId (owner's own properties), show all statuses
+  // Otherwise, public search only shows available listings unless a specific status is requested
+  if (!landlordId) {
+    filter.status = status || 'available';
+  } else if (status) {
+    filter.status = status;
+  }
 
   const skip = (Number(page) - 1) * Number(limit);
 

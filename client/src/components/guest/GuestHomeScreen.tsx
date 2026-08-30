@@ -20,7 +20,6 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { PROPERTY_LISTINGS } from '../../data/properties';
 import { PropertyListing } from '../../types';
 
 export const GuestHomeScreen: React.FC = () => {
@@ -36,6 +35,7 @@ export const GuestHomeScreen: React.FC = () => {
     setIsFilterModalOpen,
     guestHomeVariant,
     setGuestHomeVariant,
+    properties,
   } = useAuth();
 
   const [isTrustModalOpen, setIsTrustModalOpen] = useState<boolean>(false);
@@ -52,7 +52,7 @@ export const GuestHomeScreen: React.FC = () => {
   ];
 
   // Filter listings
-  const filteredListings = PROPERTY_LISTINGS.filter((prop) => {
+  const filteredListings = properties.filter((prop) => {
     if (searchFilterText) {
       const matchSearch =
         prop.title.toLowerCase().includes(searchFilterText.toLowerCase()) ||

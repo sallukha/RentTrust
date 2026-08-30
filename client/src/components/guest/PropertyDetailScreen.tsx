@@ -25,7 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { PROPERTY_LISTINGS, PROPERTY_REVIEWS } from '../../data/properties';
+import { PROPERTY_REVIEWS } from '../../data/properties';
 
 export const PropertyDetailScreen: React.FC = () => {
   const {
@@ -37,9 +37,12 @@ export const PropertyDetailScreen: React.FC = () => {
     currentUser,
     isGuestSession,
     startApplicationForProperty,
+    properties,
   } = useAuth();
 
-  const property = selectedProperty || PROPERTY_LISTINGS[0];
+  const property = selectedProperty || properties[0] || null;
+
+  if (!property) return null;
   const isSaved = savedPropertyIds.includes(property.id);
 
   const [activePhotoIdx, setActivePhotoIdx] = useState<number>(0);

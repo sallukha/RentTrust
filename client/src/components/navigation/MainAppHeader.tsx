@@ -20,6 +20,7 @@ export const MainAppHeader: React.FC = () => {
         return `Step ${tenantAppStep} of 3`;
       case 'tenant-requests-tracker': return 'My Requests';
       case 'dashboard': return 'Dashboard';
+      case 'lease-billing': return 'Lease & Billing';
       case 'landlord-profile': return 'Landlord Profile';
       case 'landlord-requests-queue': return 'Applicants';
       case 'landlord-applicant-dossier': return 'Applicant Dossier';
@@ -52,6 +53,7 @@ export const MainAppHeader: React.FC = () => {
     'chat-conversation',
     'landlord-requests-queue',
     'landlord-applicant-dossier',
+    'lease-billing',
     'login',
     'register'
   ].includes(currentScreen);
@@ -70,6 +72,8 @@ export const MainAppHeader: React.FC = () => {
     } else if (currentScreen === 'landlord-applicant-dossier') {
       setCurrentScreen('landlord-requests-queue');
     } else if (currentScreen === 'landlord-requests-queue') {
+      setCurrentScreen('dashboard');
+    } else if (currentScreen === 'lease-billing') {
       setCurrentScreen('dashboard');
     } else if (currentScreen === 'login' || currentScreen === 'register') {
       setCurrentScreen('welcome');
