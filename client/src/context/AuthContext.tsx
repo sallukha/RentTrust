@@ -69,6 +69,8 @@ interface AuthContextType {
   signRentalAgreement: () => void;
 
   // Landlord Workflow Actions
+  selectedRentRequest: BackendRentRequest | null;
+  setSelectedRentRequest: (req: BackendRentRequest | null) => void;
   approveLandlordApplication: (id: string) => void;
   declineLandlordApplication: (id: string) => void;
 
@@ -305,6 +307,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return 0;
   });
 
+  // Selected Rent Request State for Landlord Dossier
+  const [selectedRentRequest, setSelectedRentRequest] = useState<BackendRentRequest | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('rental_selected_rent_request');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  });
+
+  const updateSelectedRentRequest = useCallback((req: BackendRentRequest | null) => {
+    setSelectedRentRequest(req);
+    if (req) {
+      localStorage.setItem('rental_selected_rent_request', JSON.stringify(req));
+    } else {
+      localStorage.removeItem('rental_selected_rent_request');
+    }
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('rental_application', JSON.stringify(rentalApplication));
   }, [rentalApplication]);
@@ -427,7 +453,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const submitRentalApplication = useCallback(async () => {
     const familyTypeMap: Record<string, 'BACHELOR' | 'FAMILY' | 'STUDENT' | 'WORKING_PROFESSIONAL'> = {
-      residential: 'WORKING_PROFESSIONAL',
+      residential: 'FAMILY',
+      family: 'FAMILY',
+      bachelor: 'BACHELOR',
       work: 'WORKING_PROFESSIONAL',
       student: 'STUDENT',
     };
@@ -443,17 +471,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return false;
     }
 
+    const rawIncome = Number.parseFloat((rentalApplication.monthlyIncome || rentalApplication.annualIncome || '0').replace(/[^\d.]/g, '')) || 0;
+    const computedMonthlyIncome = Math.max(0, Math.round(rawIncome));
+
     const payload = {
       propertyId,
       moveInDate: rentalApplication.moveInDate || new Date().toISOString().slice(0, 10),
       durationMonths: rentalApplication.leaseDurationMonths || 12,
       occupants: rentalApplication.occupantsCount || 1,
-      familyType: familyTypeMap[rentalApplication.purpose || 'residential'] || 'BACHELOR',
+      familyType: familyTypeMap[rentalApplication.purpose || 'residential'] || 'FAMILY',
       currentCity: rentalApplication.applicantLocation || currentUser?.email || 'Seattle',
       pets: false,
       occupation: rentalApplication.jobTitle || 'Professional',
       organization: rentalApplication.companyName || 'Independent',
-      monthlyIncome: Math.max(0, Math.round((Number.parseFloat((rentalApplication.annualIncome || '0').replace(/[^\d.]/g, '')) || 0) / 12)),
+      monthlyIncome: computedMonthlyIncome,
+      frontDocumentUrl: (rentalApplication as any).frontDocumentUrl || undefined,
+      backDocumentUrl: (rentalApplication as any).backDocumentUrl || undefined,
+      paystubUrl: (rentalApplication as any).paystubUrl || undefined,
       reason: 'Looking for a long-term home in a verified rental community.',
       message: `I am applying for ${rentalApplication.propertyTitle || 'this property'} and would like to move in on ${rentalApplication.moveInDate || 'the requested date'}.`,
     };
@@ -893,6 +927,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         activeConversationId,
         setActiveConversationId,
         signRentalAgreement,
+        selectedRentRequest,
+        setSelectedRentRequest: updateSelectedRentRequest,
         approveLandlordApplication,
         declineLandlordApplication,
         currentUser,

@@ -99,9 +99,9 @@ export const GuestFilterModal: React.FC = () => {
                 className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
               />
               <div className="flex justify-between text-[10px] text-slate-400 mt-1">
-                <span>$200</span>
-                <span>$5,000</span>
-                <span>$15,000+</span>
+                <span>₹2,000</span>
+                <span>₹50,000</span>
+                <span>₹1,50,000+</span>
               </div>
             </div>
 

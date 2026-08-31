@@ -97,7 +97,7 @@ export const MoveInConfirmedView: React.FC = () => {
                 <DollarSign className="w-3 h-3" />
                 <span>MONTHLY RENT</span>
               </div>
-              <p className="text-sm font-black text-slate-900 dark:text-white">$2,450.00</p>
+              <p className="text-sm font-black text-slate-900 dark:text-white">₹24,500</p>
             </div>
           </div>
 

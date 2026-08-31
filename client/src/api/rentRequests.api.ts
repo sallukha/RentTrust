@@ -23,6 +23,9 @@ export interface BackendRentRequest {
   occupation?: string;
   organization?: string;
   monthlyIncome?: number;
+  frontDocumentUrl?: string;
+  backDocumentUrl?: string;
+  paystubUrl?: string;
   reason?: string;
   message?: string;
   status?: RentRequestStatus;
@@ -41,6 +44,9 @@ export interface CreateRentRequestPayload {
   occupation: string;
   organization?: string;
   monthlyIncome?: number;
+  frontDocumentUrl?: string;
+  backDocumentUrl?: string;
+  paystubUrl?: string;
   reason?: string;
   message: string;
 }

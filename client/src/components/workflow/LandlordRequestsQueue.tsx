@@ -17,13 +17,15 @@ import {
   Menu as MenuIcon,
   ChevronRight,
   Sparkles,
+  ExternalLink,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { apiService } from '../../services/api';
 import { BackendRentRequest } from '../../api';
 
 export const LandlordRequestsQueue: React.FC = () => {
-  const { setCurrentScreen, rentalApplication } = useAuth();
+  const { setCurrentScreen, setSelectedRentRequest } = useAuth();
   const [filter, setFilter] = useState<'all' | 'high_rep' | 'urgent'>('all');
   const [requests, setRequests] = useState<BackendRentRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -137,7 +139,7 @@ export const LandlordRequestsQueue: React.FC = () => {
                   ? (request.propertyId as any).title
                   : 'Property') || 'Property';
               const moveIn = request.moveInDate ? new Date(request.moveInDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'Requested date';
-              const annualIncome = request.monthlyIncome ? `$${Number(request.monthlyIncome).toLocaleString()}/mo` : 'Income on file';
+              const annualIncome = request.monthlyIncome ? `₹${Number(request.monthlyIncome).toLocaleString('en-IN')}/mo` : 'Income on file';
               const statusChip = request.status === 'approved' ? 'Approved' : request.status === 'rejected' ? 'Rejected' : 'Pending';
 
               return (
@@ -174,7 +176,7 @@ export const LandlordRequestsQueue: React.FC = () => {
                       <p className="text-[9px] font-extrabold text-teal-800 dark:text-teal-300 tracking-wider">
                         INCOME
                       </p>
-                      <p className="text-lg font-black text-teal-700 dark:text-teal-300">{request.monthlyIncome ? Math.round(Number(request.monthlyIncome) / 1000) : 0}k</p>
+                      <p className="text-lg font-black text-teal-700 dark:text-teal-300">{request.monthlyIncome ? `₹${Math.round(Number(request.monthlyIncome) / 1000)}k` : '₹0'}</p>
                     </div>
                   </div>
 
@@ -190,7 +192,7 @@ export const LandlordRequestsQueue: React.FC = () => {
 
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                        ANNUAL INCOME
+                        MONTHLY INCOME
                       </span>
                       <span className="font-bold text-slate-900 dark:text-white block">
                         {annualIncome}
@@ -216,6 +218,51 @@ export const LandlordRequestsQueue: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Cloudinary Documents if present */}
+                  {(request.frontDocumentUrl || request.backDocumentUrl || request.paystubUrl) && (
+                    <div className="p-2.5 rounded-2xl bg-teal-50/60 dark:bg-teal-950/40 border border-teal-200/80 dark:border-teal-800/60 space-y-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-teal-800 dark:text-teal-300 flex items-center gap-1">
+                        <FileText className="w-3 h-3 text-teal-600" />
+                        Uploaded Documents (Cloudinary Vault)
+                      </span>
+                      <div className="flex flex-wrap gap-2 pt-0.5">
+                        {request.frontDocumentUrl && (
+                          <a
+                            href={request.frontDocumentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 dark:text-teal-300 hover:underline bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-teal-200 dark:border-teal-700"
+                          >
+                            <span>Front ID</span>
+                            <ExternalLink className="w-3 h-3 text-teal-500" />
+                          </a>
+                        )}
+                        {request.backDocumentUrl && (
+                          <a
+                            href={request.backDocumentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 dark:text-teal-300 hover:underline bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-teal-200 dark:border-teal-700"
+                          >
+                            <span>Back ID</span>
+                            <ExternalLink className="w-3 h-3 text-teal-500" />
+                          </a>
+                        )}
+                        {request.paystubUrl && (
+                          <a
+                            href={request.paystubUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 dark:text-teal-300 hover:underline bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-teal-200 dark:border-teal-700"
+                          >
+                            <span>Paystub / Income Proof</span>
+                            <ExternalLink className="w-3 h-3 text-teal-500" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="italic text-xs text-slate-600 dark:text-slate-400 flex items-start gap-1.5 pl-1">
                     <span className="text-lg font-serif text-slate-400 leading-none">“</span>
                     <p className="line-clamp-2">
@@ -226,32 +273,47 @@ export const LandlordRequestsQueue: React.FC = () => {
                   <div className="space-y-2 pt-1">
                     <button
                       type="button"
-                      onClick={() => setCurrentScreen('landlord-applicant-dossier')}
+                      onClick={() => {
+                        setSelectedRentRequest(request);
+                        setCurrentScreen('landlord-applicant-dossier');
+                      }}
                       className="w-full py-2.5 px-4 rounded-xl bg-slate-950 hover:bg-slate-850 dark:bg-teal-500 dark:hover:bg-teal-400 dark:text-slate-950 text-white font-extrabold text-xs shadow-sm transition-all text-center flex items-center justify-center gap-1.5"
                     >
                       <span>Review & Respond</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleDecision(String(request._id || request.id), 'approved')}
-                        className="py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Approve</span>
-                      </button>
+                    {request.status === 'approved' ? (
+                      <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-extrabold flex items-center justify-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <span>Application Approved</span>
+                      </div>
+                    ) : request.status === 'rejected' || request.status === 'declined' ? (
+                      <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs font-extrabold flex items-center justify-center gap-2">
+                        <X className="w-4 h-4 text-rose-600" />
+                        <span>Application Declined</span>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleDecision(String(request._id || request.id), 'approved')}
+                          className="py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Approve</span>
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDecision(String(request._id || request.id), 'rejected')}
-                        className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                        <span>Decline</span>
-                      </button>
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDecision(String(request._id || request.id), 'rejected')}
+                          className="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          <span>Decline</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               );

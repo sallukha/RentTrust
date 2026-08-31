@@ -265,11 +265,11 @@ export const ConversationDetailView: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Monthly Rent:</span>
-                    <span className="font-bold text-teal-600">$2,450.00 / month</span>
+                    <span className="font-bold text-teal-600">₹24,500 / month</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Security Deposit:</span>
-                    <span className="font-bold text-slate-900 dark:text-white">$2,450.00 (Escrowed)</span>
+                    <span className="font-bold text-slate-900 dark:text-white">₹24,500 (Escrowed)</span>
                   </div>
                 </div>
 

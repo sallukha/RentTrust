@@ -60,7 +60,7 @@ export const TenantHomeScreen: React.FC = () => {
   const recentSearches = [
     { label: '2BR Chelsea', query: 'Chelsea' },
     { label: 'Pets allowed Loft', query: 'Loft' },
-    { label: 'Under $3.5k', query: 'Brooklyn' },
+    { label: 'Under ₹35k', query: 'Brooklyn' },
   ];
 
   const handleSearchTagClick = (tag: { label: string; query: string }) => {
@@ -502,9 +502,9 @@ export const TenantHomeScreen: React.FC = () => {
                   <span>Unlocked Renter Privileges</span>
                 </div>
                 <ul className="text-xs text-teal-700 dark:text-teal-300 space-y-1 ml-6 list-disc">
-                  <li>$0 Security Deposit Guarantee Option</li>
+                  <li>₹0 Security Deposit Guarantee Option</li>
                   <li>Fast-track 24h landlord review priority</li>
-                  <li>Pre-approved status for listings up to $4,500/mo</li>
+                  <li>Pre-approved status for listings up to ₹45,000/mo</li>
                 </ul>
               </div>
 
@@ -554,7 +554,7 @@ export const TenantHomeScreen: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-slate-300">
-                  Applied 2 days ago for $3,600/mo lease. Landlord Sarah Jenkins has opened your verified dossier.
+                  Applied 2 days ago for ₹36,000/mo lease. Landlord Sarah Jenkins has opened your verified dossier.
                 </p>
               </div>
 

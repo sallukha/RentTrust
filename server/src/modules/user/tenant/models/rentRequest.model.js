@@ -42,6 +42,18 @@ const rentRequestSchema = new mongoose.Schema(
             type: Number,
             min: 0,
         },
+        frontDocumentUrl: {
+            type: String,
+            trim: true,
+        },
+        backDocumentUrl: {
+            type: String,
+            trim: true,
+        },
+        paystubUrl: {
+            type: String,
+            trim: true,
+        },
         reason: {
             type: String,
             trim: true,

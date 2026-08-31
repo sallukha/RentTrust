@@ -18,7 +18,7 @@ export const toPropertyListing = (property: BackendProperty): PropertyListing =>
   const state = property.address?.state;
   const street = property.address?.street;
   const location = [street, city, state].filter(Boolean).join(', ');
-  const price = `$${Number(property.pricePerMonth || 0).toLocaleString()}`;
+  const price = `₹${Number(property.pricePerMonth || 0).toLocaleString('en-IN')}`;
   const landlord = getLandlord(property);
 
   return {

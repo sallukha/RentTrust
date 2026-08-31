@@ -370,7 +370,7 @@ export const TenantRequestsTimeline: React.FC = () => {
                   </div>
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700">
                     <p className="text-[10px] text-slate-400">Income</p>
-                    <p className="font-bold">$165,000/yr (Verified)</p>
+                    <p className="font-bold">₹16,50,000/yr (Verified)</p>
                   </div>
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700">
                     <p className="text-[10px] text-slate-400">Credit Tier</p>

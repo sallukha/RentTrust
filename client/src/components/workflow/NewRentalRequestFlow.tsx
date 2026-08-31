@@ -27,8 +27,10 @@ import {
   FileText,
   AlertCircle,
   Loader,
+  User,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { apiService } from '../../services/api';
 import { DocumentTypeId, EmploymentTypeId, RentalPurpose } from '../../types/workflow';
 
 export const NewRentalRequestFlow: React.FC = () => {
@@ -44,12 +46,35 @@ export const NewRentalRequestFlow: React.FC = () => {
     isLoggingIn,
   } = useAuth();
 
-  // Local state for Step 2 upload preview & selfies
+  // Local state for Step 2 & 3 upload previews, status & selfies
   const [selfieTaken, setSelfieTaken] = useState(false);
   const [frontDocName, setFrontDocName] = useState<string | null>(rentalApplication.frontDocumentName || null);
   const [backDocName, setBackDocName] = useState<string | null>(rentalApplication.backDocumentName || null);
-  const [paystubName, setPaystubName] = useState<string | null>('Paystub_Recent_Sept2024.pdf');
+  const [paystubName, setPaystubName] = useState<string | null>(null);
+  const [uploadingDoc, setUploadingDoc] = useState<'front' | 'back' | 'paystub' | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleFileUpload = async (file: File, docType: 'front' | 'back' | 'paystub') => {
+    setUploadingDoc(docType);
+    try {
+      const res = await apiService.uploadFile(file);
+      if (docType === 'front') {
+        setFrontDocName(file.name);
+        updateRentalApplication({ frontDocumentName: file.name, frontDocumentUrl: res.url } as any);
+      } else if (docType === 'back') {
+        setBackDocName(file.name);
+        updateRentalApplication({ backDocumentName: file.name, backDocumentUrl: res.url } as any);
+      } else if (docType === 'paystub') {
+        setPaystubName(file.name);
+        updateRentalApplication({ paystubUrl: res.url } as any);
+      }
+    } catch (err) {
+      console.error('Failed to upload file to Cloudinary:', err);
+      setErrors((prev) => ({ ...prev, [docType]: 'Failed to upload document. Please try again.' }));
+    } finally {
+      setUploadingDoc(null);
+    }
+  };
 
   const validateStep = (step: number) => {
     const newErrors: Record<string, string> = {};
@@ -377,20 +402,26 @@ export const NewRentalRequestFlow: React.FC = () => {
                 {[
                   {
                     id: 'residential' as RentalPurpose,
-                    title: 'Residential',
-                    sub: 'Main home or dwelling',
+                    title: 'Family / Residential',
+                    sub: 'Family home or primary dwelling',
                     icon: Home,
+                  },
+                  {
+                    id: 'bachelor' as RentalPurpose,
+                    title: 'Single / Bachelor',
+                    sub: 'Individual tenant dwelling',
+                    icon: User,
                   },
                   {
                     id: 'work' as RentalPurpose,
                     title: 'Work / Professional',
-                    sub: 'Business use or office',
+                    sub: 'Business or professional relocation',
                     icon: Briefcase,
                   },
                   {
                     id: 'student' as RentalPurpose,
                     title: 'Student Accommodation',
-                    sub: 'Proximity to campus',
+                    sub: 'Proximity to campus or study',
                     icon: GraduationCap,
                   },
                 ].map((item) => {
@@ -507,33 +538,63 @@ export const NewRentalRequestFlow: React.FC = () => {
             {/* Upload Document Slots */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-900 dark:text-white block">
-                Upload Document
+                Upload Document (Cloudinary Vault)
               </label>
 
               <div className="space-y-2.5">
                 <label className="block p-4 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-sky-50/40 dark:bg-slate-800/40 text-center cursor-pointer hover:border-teal-500 transition-colors">
                   <input
                     type="file"
+                    accept="image/*,.pdf"
                     className="hidden"
                     onChange={(e) => {
-                      if (e.target.files?.[0]) setFrontDocName(e.target.files[0].name);
+                      if (e.target.files?.[0]) handleFileUpload(e.target.files[0], 'front');
                     }}
                   />
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {frontDocName ? `✓ ${frontDocName}` : 'Front of Document'}
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-2">
+                    {uploadingDoc === 'front' ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin text-teal-500" />
+                        <span>Uploading Front ID to Cloudinary...</span>
+                      </>
+                    ) : (rentalApplication as any).frontDocumentUrl ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <span>✓ Front ID Uploaded to Cloudinary</span>
+                      </>
+                    ) : frontDocName ? (
+                      `✓ ${frontDocName}`
+                    ) : (
+                      'Front of Document (Tap to Upload)'
+                    )}
                   </span>
                 </label>
 
                 <label className="block p-4 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-sky-50/40 dark:bg-slate-800/40 text-center cursor-pointer hover:border-teal-500 transition-colors">
                   <input
                     type="file"
+                    accept="image/*,.pdf"
                     className="hidden"
                     onChange={(e) => {
-                      if (e.target.files?.[0]) setBackDocName(e.target.files[0].name);
+                      if (e.target.files?.[0]) handleFileUpload(e.target.files[0], 'back');
                     }}
                   />
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {backDocName ? `✓ ${backDocName}` : 'Back of Document'}
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-center gap-2">
+                    {uploadingDoc === 'back' ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin text-teal-500" />
+                        <span>Uploading Back ID to Cloudinary...</span>
+                      </>
+                    ) : (rentalApplication as any).backDocumentUrl ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                        <span>✓ Back ID Uploaded to Cloudinary</span>
+                      </>
+                    ) : backDocName ? (
+                      `✓ ${backDocName}`
+                    ) : (
+                      'Back of Document (Tap to Upload)'
+                    )}
                   </span>
                 </label>
               </div>
@@ -698,18 +759,18 @@ export const NewRentalRequestFlow: React.FC = () => {
               <div className="space-y-2">
                 <div>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">
-                    Annual Gross Income
+                    Monthly Gross Income (₹ / month)
                   </span>
                   <div className="relative">
                     <span className="text-xs font-bold text-slate-400 absolute left-3.5 top-3.5">
-                      $
+                      ₹
                     </span>
                     <input
                       type="text"
-                      placeholder="165,000"
+                      placeholder="e.g. 5,000"
                       value={rentalApplication.annualIncome || ''}
                       onChange={(e) => {
-                        updateRentalApplication({ annualIncome: e.target.value });
+                        updateRentalApplication({ annualIncome: e.target.value, monthlyIncome: e.target.value } as any);
                         if (errors.annualIncome) setErrors(prev => ({ ...prev, annualIncome: '' }));
                       }}
                       className={`w-full py-3 pl-8 pr-4 rounded-2xl bg-sky-50/70 dark:bg-slate-800 border ${errors.annualIncome ? 'border-red-500' : 'border-sky-100 dark:border-slate-700'} text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500`}
@@ -720,21 +781,36 @@ export const NewRentalRequestFlow: React.FC = () => {
 
                 <div>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-1">
-                    Upload Paystubs (Latest 2 months)
+                    Upload Paystubs / Proof of Income (Cloudinary Vault)
                   </span>
                   <label className="block p-4 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-sky-50/40 dark:bg-slate-800/40 text-center cursor-pointer hover:border-teal-500 transition-colors">
                     <input
                       type="file"
+                      accept="image/*,.pdf"
                       className="hidden"
                       onChange={(e) => {
-                        if (e.target.files?.[0]) setPaystubName(e.target.files[0].name);
+                        if (e.target.files?.[0]) handleFileUpload(e.target.files[0], 'paystub');
                       }}
                     />
                     <FileText className="w-5 h-5 text-slate-400 mx-auto mb-1" />
-                    <p className="text-xs font-bold text-slate-800 dark:text-white">
-                      {paystubName ? `✓ ${paystubName}` : 'Tap to upload files'}
+                    <p className="text-xs font-bold text-slate-800 dark:text-white flex items-center justify-center gap-1.5">
+                      {uploadingDoc === 'paystub' ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin text-teal-500" />
+                          <span>Uploading Paystub to Cloudinary...</span>
+                        </>
+                      ) : (rentalApplication as any).paystubUrl ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                          <span>✓ Paystub Uploaded to Cloudinary</span>
+                        </>
+                      ) : paystubName ? (
+                        `✓ ${paystubName}`
+                      ) : (
+                        'Tap to upload paystubs (PDF, PNG, JPG)'
+                      )}
                     </p>
-                    <p className="text-[10px] text-slate-400">PDF, PNG, JPG up to 10MB</p>
+                    <p className="text-[10px] text-slate-400 mt-1">Encrypted and uploaded to FDIC Escrow Vault</p>
                   </label>
                 </div>
               </div>
@@ -866,7 +942,7 @@ export const NewRentalRequestFlow: React.FC = () => {
                 </div>
                 <div className="p-3 flex items-center justify-between text-xs">
                   <span className="text-slate-500 dark:text-slate-400">Monthly Rent</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white">$3,200.00</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white">₹32,000</span>
                 </div>
                 <div className="p-3 flex items-center justify-between text-xs">
                   <span className="text-slate-500 dark:text-slate-400">Occupants</span>
@@ -892,7 +968,7 @@ export const NewRentalRequestFlow: React.FC = () => {
                 <div className="flex items-center justify-between pt-1">
                   <div>
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Annual Income</span>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white">$165,000</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">₹16,50,000</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Employment Status</span>

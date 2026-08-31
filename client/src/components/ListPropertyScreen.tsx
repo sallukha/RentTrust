@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ChevronLeft,
@@ -318,10 +318,10 @@ export const ListPropertyScreen: React.FC = () => {
         description: formData.detailedDescription,
         address: {
           street: formData.address,
-          city: formData.city,
-          state: 'WA',
-          zipCode: formData.zipCode,
-          country: 'USA',
+          city: formData.city || 'Mumbai',
+          state: 'MH',
+          zipCode: formData.zipCode || '400001',
+          country: 'India',
         },
         pricePerMonth: Number(formData.monthlyRent),
         securityDeposit: Number(formData.securityDeposit),
@@ -1186,7 +1186,7 @@ export const ListPropertyScreen: React.FC = () => {
                     Monthly Rent
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-4 font-black text-slate-400">$</span>
+                    <span className="absolute left-4 font-black text-slate-400">₹</span>
                     <input
                       type="number"
                       value={formData.monthlyRent}
@@ -1202,7 +1202,7 @@ export const ListPropertyScreen: React.FC = () => {
                     Security Deposit
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-4 font-black text-slate-400">$</span>
+                    <span className="absolute left-4 font-black text-slate-400">₹</span>
                     <input
                       type="number"
                       value={formData.securityDeposit}
@@ -1640,13 +1640,13 @@ export const ListPropertyScreen: React.FC = () => {
                   <div>
                     <span className="text-[11px] font-medium text-slate-500">Monthly Rent</span>
                     <p className="text-base font-black text-slate-900 dark:text-white">
-                      ${Number(formData.monthlyRent).toLocaleString()}
+                      ₹{Number(formData.monthlyRent).toLocaleString('en-IN')}
                     </p>
                   </div>
                   <div>
                     <span className="text-[11px] font-medium text-slate-500">Security Deposit</span>
                     <p className="text-base font-black text-slate-900 dark:text-white">
-                      ${Number(formData.securityDeposit).toLocaleString()}
+                      ₹{Number(formData.securityDeposit).toLocaleString('en-IN')}
                     </p>
                   </div>
                 </div>
@@ -1875,7 +1875,7 @@ export const ListPropertyScreen: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-slate-500 font-medium">Monthly Rent</span>
                       <span className="font-bold text-slate-900 dark:text-white">
-                        ${Number(formData.monthlyRent).toLocaleString()} / mo
+                        ₹{Number(formData.monthlyRent).toLocaleString('en-IN')} / mo
                       </span>
                     </div>
                     <div className="flex justify-between">

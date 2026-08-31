@@ -22,6 +22,9 @@ export const validateRentRequestPayload = (payload) => {
     const monthlyIncome = payload?.monthlyIncome !== undefined && payload?.monthlyIncome !== null
         ? Number(payload.monthlyIncome)
         : undefined
+    const frontDocumentUrl = payload?.frontDocumentUrl ? String(payload.frontDocumentUrl).trim() : undefined
+    const backDocumentUrl = payload?.backDocumentUrl ? String(payload.backDocumentUrl).trim() : undefined
+    const paystubUrl = payload?.paystubUrl ? String(payload.paystubUrl).trim() : undefined
     const reason = payload?.reason ? String(payload.reason).trim() : ''
     const message = String(payload?.message || '').trim()
 
@@ -81,6 +84,9 @@ export const validateRentRequestPayload = (payload) => {
         occupation,
         organization: organization || undefined,
         monthlyIncome,
+        frontDocumentUrl,
+        backDocumentUrl,
+        paystubUrl,
         reason: reason || undefined,
         message,
     }

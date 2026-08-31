@@ -97,7 +97,7 @@ export const DashboardScreen: React.FC = () => {
             property: propTitle,
             leaseTerm: `${req.durationMonths || 12} mo`,
             rep: 4.5,
-            salary: `$${(req.monthlyIncome || 0).toLocaleString()} / mo`,
+            salary: `₹${(req.monthlyIncome || 0).toLocaleString('en-IN')} / mo`,
             creditScore: 750,
             employment: req.organization || 'Independent',
             status: req.status === 'rejected' ? 'declined' : (req.status as any) || 'pending',
@@ -133,12 +133,12 @@ export const DashboardScreen: React.FC = () => {
     ...leases.slice(0, 2).map((lease) => ({
       title: `Lease ${lease.status || 'draft'}`,
       detail: lease.propertyId ? `Property ${lease.propertyId}` : 'Property reference',
-      amount: lease.monthlyRent ? `$${lease.monthlyRent}` : '—',
+      amount: lease.monthlyRent ? `₹${lease.monthlyRent}` : '—',
     })),
     ...invoices.slice(0, 2).map((invoice) => ({
       title: `Invoice ${invoice.invoiceNumber || 'draft'}`,
       detail: invoice.status || 'unpaid',
-      amount: invoice.amountDue ? `$${invoice.amountDue}` : '—',
+      amount: invoice.amountDue ? `₹${invoice.amountDue}` : '—',
     })),
   ].slice(0, 4);
 
@@ -270,7 +270,7 @@ export const DashboardScreen: React.FC = () => {
               </h3>
             </div>
             <div className="rounded-full bg-emerald-50 dark:bg-emerald-950/50 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
-              ${isDataLoading ? '…' : activeMonthlyRevenue.toLocaleString()}
+              ₹{isDataLoading ? '…' : activeMonthlyRevenue.toLocaleString('en-IN')}
             </div>
           </div>
 
@@ -548,22 +548,32 @@ export const DashboardScreen: React.FC = () => {
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => handleDeclineApplicant(reviewingApplicant.id)}
-                  className="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
-                >
-                  Decline
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleApproveApplicant(reviewingApplicant.id)}
-                  className="flex-1 py-3 rounded-xl bg-slate-950 dark:bg-emerald-600 hover:bg-slate-850 dark:hover:bg-emerald-500 text-white font-bold text-xs transition-colors cursor-pointer"
-                >
-                  Approve Lease & Escrow
-                </button>
-              </div>
+              {reviewingApplicant.status === 'approved' ? (
+                <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 font-bold text-xs text-center">
+                  ✓ Application Approved
+                </div>
+              ) : reviewingApplicant.status === 'declined' ? (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 font-bold text-xs text-center">
+                  ✕ Application Declined
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDeclineApplicant(reviewingApplicant.id)}
+                    className="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 hover:text-rose-600 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Decline
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApproveApplicant(reviewingApplicant.id)}
+                    className="flex-1 py-3 rounded-xl bg-slate-950 dark:bg-emerald-600 hover:bg-slate-850 dark:hover:bg-emerald-500 text-white font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Approve Lease & Escrow
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}
@@ -631,7 +641,7 @@ export const DashboardScreen: React.FC = () => {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                        Monthly Rent ($)
+                        Monthly Rent (₹)
                       </label>
                       <input
                         type="number"

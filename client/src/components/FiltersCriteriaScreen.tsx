@@ -133,10 +133,10 @@ export const FiltersCriteriaScreen: React.FC = () => {
             </span>
             <div className="text-right">
               <span className="text-xl sm:text-2xl font-black text-[#0f766e] dark:text-teal-400 tracking-tight leading-none block">
-                ${minBudget.toLocaleString()} –
+                ₹{minBudget.toLocaleString('en-IN')} –
               </span>
               <span className="text-xl sm:text-2xl font-black text-[#0f766e] dark:text-teal-400 tracking-tight leading-none block mt-0.5">
-                ${maxBudget.toLocaleString()}
+                ₹{maxBudget.toLocaleString('en-IN')}
               </span>
             </div>
           </div>
@@ -170,8 +170,8 @@ export const FiltersCriteriaScreen: React.FC = () => {
 
             {/* Slider Min/Max Legends */}
             <div className="flex justify-between text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-2">
-              <span>$500</span>
-              <span>$10,000+</span>
+              <span>₹5,000</span>
+              <span>₹1,00,000+</span>
             </div>
           </div>
         </div>

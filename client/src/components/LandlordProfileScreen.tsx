@@ -230,7 +230,7 @@ export const LandlordProfileScreen: React.FC = () => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 <span className="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-white/95 dark:bg-slate-900/90 text-slate-950 dark:text-white text-[11px] font-black shadow-xs">
-                  $2,450
+                  ₹24,500
                 </span>
               </div>
               <div className="p-2.5">
@@ -258,7 +258,7 @@ export const LandlordProfileScreen: React.FC = () => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
                 <span className="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-white/95 dark:bg-slate-900/90 text-slate-950 dark:text-white text-[11px] font-black shadow-xs">
-                  $3,100
+                  ₹31,000
                 </span>
               </div>
               <div className="p-2.5">

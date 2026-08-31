@@ -1,6 +1,6 @@
 export type ActiveUserRole = 'tenant' | 'landlord' | 'admin';
 
-export type RentalPurpose = 'residential' | 'work' | 'student';
+export type RentalPurpose = 'residential' | 'family' | 'bachelor' | 'work' | 'student';
 export type DocumentTypeId = 'drivers_license' | 'passport' | 'national_id';
 export type EmploymentTypeId = 'full_time' | 'part_time' | 'self_employed' | 'student';
 
@@ -39,7 +39,9 @@ export interface RentalApplicationData {
   // Step 2: Identity
   documentType: DocumentTypeId;
   frontDocumentName?: string;
+  frontDocumentUrl?: string;
   backDocumentName?: string;
+  backDocumentUrl?: string;
   faceMatchCompleted: boolean;
   
   // Step 3: Employment
@@ -47,7 +49,9 @@ export interface RentalApplicationData {
   companyName: string;
   jobTitle: string;
   annualIncome: string;
+  monthlyIncome?: string;
   paystubUploaded: boolean;
+  paystubUrl?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
   

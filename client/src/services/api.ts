@@ -144,6 +144,17 @@ export const apiService = {
     return { valid: true };
   },
 
+  async uploadFile(file: File): Promise<{ url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { apiRequest } = await import('../api/client');
+    const result = await apiRequest<{ success: boolean; data: { url: string } }>('/users/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    return result.data;
+  },
+
   async registerUser(data: RegistrationFormData): Promise<RegistrationResponse> {
     const role = data.profileType;
     const result = await authApi.register({
@@ -192,8 +203,8 @@ export const apiService = {
       rememberDevice: data.rememberDevice,
       isGuest: false,
       portfolioSummary: {
-        totalNetWorth: '$0',
-        monthlyRentalIncome: '$0',
+        totalNetWorth: '₹0',
+        monthlyRentalIncome: '₹0',
         propertiesTracked: 0,
         portfolioGrowthYOY: '0%',
         creditPassportScore: 0,

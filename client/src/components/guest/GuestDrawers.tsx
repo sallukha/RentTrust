@@ -205,11 +205,11 @@ export const GuestProfileView: React.FC = () => {
       <div className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-850/80 border border-slate-200/70 dark:border-slate-800 space-y-2 text-xs">
         <div className="flex justify-between py-1.5 border-b border-slate-200/60 dark:border-slate-800">
           <span className="text-slate-600 dark:text-slate-400">Currency</span>
-          <span className="font-bold text-slate-900 dark:text-white">USD ($)</span>
+          <span className="font-bold text-slate-900 dark:text-white">INR (₹)</span>
         </div>
         <div className="flex justify-between py-1.5 border-b border-slate-200/60 dark:border-slate-800">
           <span className="text-slate-600 dark:text-slate-400">Language</span>
-          <span className="font-bold text-slate-900 dark:text-white">English (US)</span>
+          <span className="font-bold text-slate-900 dark:text-white">English (IN)</span>
         </div>
         <div className="flex justify-between py-1.5">
           <span className="text-slate-600 dark:text-slate-400">Security Escrow</span>

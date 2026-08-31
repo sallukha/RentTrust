@@ -292,7 +292,7 @@ export const PropertyDetailScreen: React.FC = () => {
             onClick={() => setIsPriceBreakdownOpen(true)}
             className="text-xs font-semibold text-slate-600 dark:text-slate-300 underline hover:text-teal-600"
           >
-            Total: $1,420
+            Total: ₹14,200
           </button>
         </div>
 
@@ -336,24 +336,24 @@ export const PropertyDetailScreen: React.FC = () => {
 
               <div className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
                 <div className="flex justify-between">
-                  <span>3 nights &times; $450/night</span>
-                  <span className="font-semibold text-slate-900 dark:text-white">$1,350</span>
+                  <span>3 nights &times; ₹4,500/night</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">₹13,500</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Cleaning & turnover fee</span>
-                  <span className="font-semibold text-slate-900 dark:text-white">$150</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">₹1,500</span>
                 </div>
                 <div className="flex justify-between">
                   <span>RentalTrust verification insurance</span>
-                  <span className="font-semibold text-slate-900 dark:text-white">$120</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">₹1,200</span>
                 </div>
                 <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
                   <span>Welcome discount promo</span>
-                  <span>-$200</span>
+                  <span>-₹2,000</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-slate-200 dark:border-slate-800 font-extrabold text-sm text-slate-900 dark:text-white">
                   <span>Total Amount</span>
-                  <span>$1,420</span>
+                  <span>₹14,200</span>
                 </div>
               </div>
 

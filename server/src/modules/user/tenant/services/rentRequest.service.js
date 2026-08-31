@@ -13,6 +13,9 @@ const rentRequestProjection = {
     occupation: 1,
     organization: 1,
     monthlyIncome: 1,
+    frontDocumentUrl: 1,
+    backDocumentUrl: 1,
+    paystubUrl: 1,
     reason: 1,
     message: 1,
     status: 1,
@@ -35,6 +38,7 @@ export const getMyRentRequests = async ({ user }) => {
     const rentRequests = await RentRequest.find({ tenantId: user._id })
         .sort({ createdAt: -1 })
         .select(rentRequestProjection)
+        .populate('propertyId', 'title address pricePerMonth status images')
 
     return rentRequests
 }
