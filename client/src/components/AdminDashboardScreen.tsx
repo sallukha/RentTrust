@@ -1,0 +1,1 @@
+﻿import React from 'react'; export const AdminDashboardScreen: React.FC = () => { return <div className='p-6 pt-20 text-center font-bold text-slate-800 dark:text-white text-2xl'>Admin Dashboard (Under Construction)</div>; };
