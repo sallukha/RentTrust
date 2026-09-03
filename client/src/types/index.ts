@@ -41,6 +41,7 @@ export interface RegistrationResponse {
   message: string;
   user: UserProfile;
   token: string;
+  otp?: string;
   onboardingSteps: OnboardingStep[];
 }
 

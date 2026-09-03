@@ -7,7 +7,7 @@ import confetti from 'canvas-confetti';
 
 export const OtpVerificationScreen: React.FC = () => {
   const { setCurrentScreen, verifyPendingLoginOtp, loginData, loginErrors, pendingLoginOtp } = useAuth();
-  const { formData } = useRegistration();
+  const { formData, pendingSignupOtp } = useRegistration();
 
   // 6 digits array
   const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
@@ -23,10 +23,11 @@ export const OtpVerificationScreen: React.FC = () => {
 
   // Phone number from registration context or fallback demo
   const displayPhone = loginData.identifier || formData.phoneNumber?.trim() || '+1 (555) 000-0000';
+  const pendingOtp = pendingSignupOtp || pendingLoginOtp;
 
   useEffect(() => {
-    console.log('[OTP] OTP received on OTP verification screen:', pendingLoginOtp);
-  }, [pendingLoginOtp]);
+    console.log('[OTP] OTP received on OTP verification screen:', pendingOtp);
+  }, [pendingOtp]);
 
 
   // Real-time Countdown Timer
@@ -133,8 +134,8 @@ export const OtpVerificationScreen: React.FC = () => {
 
   // Quick autofill demo helper
   const handleDemoFill = () => {
-    if (!pendingLoginOtp) return;
-    handlePasteCode(pendingLoginOtp);
+    if (!pendingOtp) return;
+    handlePasteCode(pendingOtp);
     setErrorMessage(null);
     inputRefs.current[5]?.focus();
     setFocusedIndex(5);
@@ -251,9 +252,9 @@ export const OtpVerificationScreen: React.FC = () => {
           We sent a 6–digit code to <span className="font-bold text-slate-950 dark:text-white whitespace-nowrap">{displayPhone}</span>
         </p>
 
-        {pendingLoginOtp && (
+        {pendingOtp && (
           <div className="w-full max-w-sm mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-bold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
-            Development OTP: {pendingLoginOtp}
+            Development OTP: {pendingOtp}
           </div>
         )}
 

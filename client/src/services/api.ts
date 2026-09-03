@@ -163,12 +163,14 @@ export const apiService = {
       phone: data.phoneNumber,
       role,
     });
+    console.log('[OTP] Complete signup API response:', result);
 
     return {
       success: result.success,
       message: result.message || 'Account created successfully. Please sign in with OTP.',
       user: toUserProfile(result.data.user),
       token: '',
+      otp: typeof result.data.otp === 'string' ? result.data.otp : undefined,
       onboardingSteps: onboardingForRole(role),
     };
   },

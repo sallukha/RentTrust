@@ -19,6 +19,7 @@ interface RegistrationContextType {
   isSubmitting: boolean;
   isValidatingField: Record<string, boolean>;
   registeredResponse: RegistrationResponse | null;
+  pendingSignupOtp: string | null;
   rolesData: Record<ProfileType, RoleDetail> | null;
   statsData: CommunityStats | null;
   recentUsers: RecentUserItem[];
@@ -65,6 +66,10 @@ export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isValidatingField, setIsValidatingField] = useState<Record<string, boolean>>({});
   const [registeredResponse, setRegisteredResponse] = useState<RegistrationResponse | null>(null);
+  const [pendingSignupOtp, setPendingSignupOtp] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return sessionStorage.getItem('rental_pending_signup_otp');
+  });
 
   useEffect(() => {
     localStorage.setItem('rental_registration_form', JSON.stringify(formData));
@@ -235,6 +240,13 @@ export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     try {
       const res = await apiService.registerUser(formData);
+      console.log('[OTP] Extracted signup OTP:', res.otp);
+      if (!res.otp) {
+        throw new Error('The signup API response did not contain an OTP.');
+      }
+      setPendingSignupOtp(res.otp);
+      sessionStorage.setItem('rental_pending_signup_otp', res.otp);
+      console.log('[OTP] Signup OTP before navigation:', res.otp);
       setRegisteredResponse(res);
       localStorage.removeItem('rental_registration_form');
       await refreshStats();
@@ -297,6 +309,7 @@ export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         isSubmitting,
         isValidatingField,
         registeredResponse,
+        pendingSignupOtp,
         rolesData,
         statsData,
         recentUsers,

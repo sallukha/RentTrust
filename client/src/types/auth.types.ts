@@ -32,6 +32,7 @@ export interface LoginOtpRequest {
 
 export interface RegisterApiData {
   user: BackendUser;
+  otp?: string;
 }
 
 export interface LoginOtpApiData {
