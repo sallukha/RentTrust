@@ -85,6 +85,7 @@ interface AuthContextType {
   setLoginFieldValue: (field: keyof LoginFormData, value: any) => void;
   handleLoginSubmit: (e?: React.FormEvent) => Promise<boolean>;
   verifyPendingLoginOtp: (otp: string) => Promise<boolean>;
+  pendingLoginOtp: string | null;
   handleSocialLogin: (provider: 'google' | 'apple') => Promise<boolean>;
   handleGuestLogin: () => Promise<boolean>;
   
@@ -212,6 +213,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [loginErrors, setLoginErrors] = useState<LoginFormErrors>({});
+  const [pendingLoginOtp, setPendingLoginOtp] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return sessionStorage.getItem('rental_pending_login_otp');
+  });
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
   const [isSocialLoading, setIsSocialLoading] = useState<'google' | 'apple' | null>(null);
   const [isGuestLoading, setIsGuestLoading] = useState<boolean>(false);
@@ -685,7 +690,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoginErrors({});
 
     try {
-      await apiService.requestLoginOtp(loginData);
+      const response = await apiService.requestLoginOtp(loginData);
+      console.log('[OTP] Full login API response:', response);
+      const extractedOtp = typeof response.data?.otp === 'string' ? response.data.otp : null;
+      console.log('[OTP] Extracted OTP:', extractedOtp);
+
+      if (!extractedOtp) {
+        throw new Error('The login API response did not contain an OTP.');
+      }
+
+      setPendingLoginOtp(extractedOtp);
+      sessionStorage.setItem('rental_pending_login_otp', extractedOtp);
+      console.log('[OTP] OTP before navigation:', extractedOtp);
       updateCurrentScreen('otp-verification');
       return true;
     } catch (err) {
@@ -892,6 +908,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setReturnToScreenAfterAuth,
         loginData,
         loginErrors,
+        pendingLoginOtp,
         isLoggingIn,
         isSocialLoading,
         isGuestLoading,

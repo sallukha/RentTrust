@@ -6,7 +6,7 @@ import { useRegistration } from '../context/RegistrationContext';
 import confetti from 'canvas-confetti';
 
 export const OtpVerificationScreen: React.FC = () => {
-  const { setCurrentScreen, verifyPendingLoginOtp, loginData, loginErrors } = useAuth();
+  const { setCurrentScreen, verifyPendingLoginOtp, loginData, loginErrors, pendingLoginOtp } = useAuth();
   const { formData } = useRegistration();
 
   // 6 digits array
@@ -23,6 +23,10 @@ export const OtpVerificationScreen: React.FC = () => {
 
   // Phone number from registration context or fallback demo
   const displayPhone = loginData.identifier || formData.phoneNumber?.trim() || '+1 (555) 000-0000';
+
+  useEffect(() => {
+    console.log('[OTP] OTP received on OTP verification screen:', pendingLoginOtp);
+  }, [pendingLoginOtp]);
 
 
   // Real-time Countdown Timer
@@ -129,8 +133,8 @@ export const OtpVerificationScreen: React.FC = () => {
 
   // Quick autofill demo helper
   const handleDemoFill = () => {
-    const sample = ['7', '2', '9', '4', '1', '8'];
-    setOtp(sample);
+    if (!pendingLoginOtp) return;
+    handlePasteCode(pendingLoginOtp);
     setErrorMessage(null);
     inputRefs.current[5]?.focus();
     setFocusedIndex(5);
@@ -206,15 +210,15 @@ export const OtpVerificationScreen: React.FC = () => {
           <span className="tracking-tight">Otp Verification</span>
         </button>
 
-        {/* Demo Fast Fill Badge */}
+        {/* Returned OTP autofill */}
         <button
           type="button"
           onClick={handleDemoFill}
           className="text-[11px] font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 border border-teal-200 dark:border-teal-800 px-2.5 py-1 rounded-full flex items-center gap-1 transition-all cursor-pointer"
-          title="Auto fill sample OTP for testing"
+          title="Automatically fill the returned OTP"
         >
           <Sparkles className="w-3 h-3 text-teal-600 dark:text-teal-400" />
-          <span>Demo Code</span>
+          <span>Fill OTP</span>
         </button>
       </div>
 
@@ -246,6 +250,12 @@ export const OtpVerificationScreen: React.FC = () => {
         <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-[15px] text-center leading-relaxed max-w-xs mb-8">
           We sent a 6–digit code to <span className="font-bold text-slate-950 dark:text-white whitespace-nowrap">{displayPhone}</span>
         </p>
+
+        {pendingLoginOtp && (
+          <div className="w-full max-w-sm mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-bold text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+            Development OTP: {pendingLoginOtp}
+          </div>
+        )}
 
         {/* 6 OTP Input Boxes */}
         {/* CRITICAL: Uses type="text" with inputMode="numeric" to strictly eliminate browser number spinner arrows */}

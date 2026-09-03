@@ -3,7 +3,7 @@ import { ApiClientError } from '../types/api.types';
 const DEFAULT_API_BASE_URL = 'https://renttrust-drxz.onrender.com/api/v1';
 
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || DEFAULT_API_BASE_URL;
+  import.meta.env.VITE_API_URL?.replace(/\/$/, '') || DEFAULT_API_BASE_URL;
 
 export const AUTH_TOKEN_STORAGE_KEY = 'rental_token';
 
