@@ -372,8 +372,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const currentId = normalizeId(currentUser?.id);
     const isCurrentBuyer = currentId === normalizeId(conversation.buyer_id) || activeRole === 'tenant';
     const isLandlordParticipant = isCurrentBuyer;
+    const genericNames = new Set(['verified landlord', 'landlord', 'verified host', 'tenant', 'renttrust member']);
+    const storedSellerName = conversation.seller_name?.trim();
     const participantName = isLandlordParticipant
-      ? conversation.seller_name || property?.host.name || 'Landlord'
+      ? (property?.host.name && !genericNames.has(property.host.name.toLowerCase())
+        ? property.host.name
+        : storedSellerName && !genericNames.has(storedSellerName.toLowerCase())
+          ? storedSellerName
+          : 'Landlord')
       : conversation.buyer_name || 'Tenant';
     const participantAvatar = isLandlordParticipant
       ? conversation.seller_avatar_url || property?.host.avatar || defaultChatAvatar

@@ -46,7 +46,7 @@ export const toPropertyListing = (property: BackendProperty): PropertyListing =>
     host: {
       id: typeof property.landlordId === 'string' ? property.landlordId : landlord?.id || landlord?._id,
       name: landlord?.name || 'Verified Landlord',
-      avatar: '',
+      avatar: landlord?.avatarUrl || landlord?.profileImage || '',
       reputation: 'Verified',
       verified: true,
     },

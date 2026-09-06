@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import {
   ShieldCheck,
   Star,
   Home,
   Zap,
-  MessageSquare,
   Share2,
   ChevronLeft,
   ChevronRight,
@@ -13,7 +11,6 @@ import {
   MapPin,
   Sparkles,
   Award,
-  Send,
   X,
   Lock,
   User,
@@ -25,9 +22,6 @@ import { useAuth } from '../context/AuthContext';
 export const LandlordProfileScreen: React.FC = () => {
   const { setCurrentScreen, openPropertyDetail, activeRole, logout, currentUser, properties } = useAuth();
   const [feedbackIndex, setFeedbackIndex] = useState(0);
-  const [showMessageModal, setShowMessageModal] = useState(false);
-  const [messageText, setMessageText] = useState('');
-  const [messageSent, setMessageSent] = useState(false);
   const [sharedToast, setSharedToast] = useState(false);
 
   const reviews = [
@@ -63,16 +57,6 @@ export const LandlordProfileScreen: React.FC = () => {
 
   const handlePrevReview = () => {
     setFeedbackIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
-  };
-
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessageSent(true);
-    setTimeout(() => {
-      setMessageSent(false);
-      setShowMessageModal(false);
-      setMessageText('');
-    }, 1500);
   };
 
   const handleShare = () => {
@@ -366,17 +350,8 @@ export const LandlordProfileScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Actions: Message & Sign Out */}
+        {/* Actions: Sign Out */}
         <div className="space-y-2 pt-2">
-          <button
-            type="button"
-            onClick={() => setShowMessageModal(true)}
-            className="w-full py-3 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-bold text-xs shadow-md flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-800"
-          >
-            <MessageSquare className="w-4 h-4" />
-            <span>Send Direct Message to {currentUser?.fullName?.split(' ')[0] || 'Landlord'}</span>
-          </button>
-
           <button
             type="button"
             onClick={logout}
@@ -387,82 +362,6 @@ export const LandlordProfileScreen: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* Message Landlord Modal */}
-      <AnimatePresence>
-        {showMessageModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowMessageModal(false)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-xs"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 z-10 space-y-4"
-            >
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-emerald-600" />
-                  <h3 className="text-base font-black text-slate-900 dark:text-white">
-                    Direct Inquiry to {currentUser?.fullName?.split(' ')[0] || 'Landlord'}
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowMessageModal(false)}
-                  className="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {messageSent ? (
-                <div className="py-6 text-center space-y-2">
-                  <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto" />
-                  <h4 className="text-base font-bold text-slate-900 dark:text-white">
-                    Inquiry Dispatched!
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    {currentUser?.fullName?.split(' ')[0] || 'Landlord'} usually responds within 20 minutes (98% response rate).
-                  </p>
-                </div>
-              ) : (
-                <form onSubmit={handleSendMessage} className="space-y-3">
-                  <p className="text-xs text-slate-600 dark:text-slate-300">
-                    Submit your question regarding lease flexibility, viewing slots, or deposit terms.
-                  </p>
-                  <textarea
-                    required
-                    rows={4}
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    placeholder="Hi Marcus, I'm interested in viewing The Skylark Loft this weekend..."
-                    className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                  />
-                  <div className="flex items-center justify-between text-[11px] text-slate-500">
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                      <Lock className="w-3 h-3" /> End-to-end encrypted
-                    </span>
-                    <span>Average reply: 20 mins</span>
-                  </div>
-                  <button
-                    type="submit"
-                    className="w-full py-3 rounded-xl bg-black dark:bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-900"
-                  >
-                    <Send className="w-4 h-4" />
-                    <span>Send Verified Inquiry</span>
-                  </button>
-                </form>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

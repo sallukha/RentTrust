@@ -43,7 +43,11 @@ export const searchProperties = async (query) => {
   const skip = (Number(page) - 1) * Number(limit);
 
   const [properties, total] = await Promise.all([
-    Property.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+    Property.find(filter)
+      .populate('landlordId', 'name email phone avatarUrl profileImage')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit)),
     Property.countDocuments(filter)
   ]);
 
