@@ -54,7 +54,7 @@ export interface ListPropertyFormData {
   address: string;
   city: string;
   zipCode: string;
-  
+
   // Step 2: Photos - Store both preview URL and File object
   coverPhotoFile: File | null;
   coverPhotoPreview: string;
@@ -866,11 +866,10 @@ export const ListPropertyScreen: React.FC = () => {
                             },
                           })
                         }
-                        className={`p-3.5 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${
-                          isChecked
+                        className={`p-3.5 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${isChecked
                             ? 'bg-slate-200 dark:bg-slate-800 border-slate-900 dark:border-emerald-500 shadow-xs'
                             : 'bg-slate-100/80 dark:bg-slate-900/60 border-transparent hover:border-slate-300'
-                        }`}
+                          }`}
                       >
                         <div className="flex flex-col gap-2">
                           <Icon className="w-5 h-5 text-slate-800 dark:text-slate-200" />
@@ -915,11 +914,10 @@ export const ListPropertyScreen: React.FC = () => {
                             },
                           })
                         }
-                        className={`p-3.5 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${
-                          isChecked
+                        className={`p-3.5 rounded-2xl border-2 flex items-center justify-between cursor-pointer transition-all ${isChecked
                             ? 'bg-slate-200 dark:bg-slate-800 border-slate-900 dark:border-emerald-500 shadow-xs'
                             : 'bg-slate-100/80 dark:bg-slate-900/60 border-transparent hover:border-slate-300'
-                        }`}
+                          }`}
                       >
                         <div className="flex flex-col gap-2">
                           <Icon className="w-5 h-5 text-slate-800 dark:text-slate-200" />
@@ -969,11 +967,10 @@ export const ListPropertyScreen: React.FC = () => {
                       </div>
                     </div>
                     <div
-                      className={`w-5 h-5 rounded-full border-2 border-slate-900 dark:border-white flex items-center justify-center ${
-                        formData.safetyAmenities.smokeAlarm
+                      className={`w-5 h-5 rounded-full border-2 border-slate-900 dark:border-white flex items-center justify-center ${formData.safetyAmenities.smokeAlarm
                           ? 'bg-slate-900 dark:bg-white'
                           : 'bg-transparent'
-                      }`}
+                        }`}
                     />
                   </div>
 
@@ -1002,11 +999,10 @@ export const ListPropertyScreen: React.FC = () => {
                       </div>
                     </div>
                     <div
-                      className={`w-5 h-5 rounded-full border-2 border-slate-400 dark:border-slate-600 flex items-center justify-center ${
-                        formData.safetyAmenities.fireExtinguisher
+                      className={`w-5 h-5 rounded-full border-2 border-slate-400 dark:border-slate-600 flex items-center justify-center ${formData.safetyAmenities.fireExtinguisher
                           ? 'bg-slate-900 dark:bg-white border-slate-900'
                           : 'bg-transparent'
-                      }`}
+                        }`}
                     />
                   </div>
                 </div>
@@ -1114,11 +1110,10 @@ export const ListPropertyScreen: React.FC = () => {
                         key={item}
                         type="button"
                         onClick={() => toggleHighlight(item)}
-                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${
-                          isSelected
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer ${isSelected
                             ? 'bg-slate-900 text-white border-slate-900 dark:bg-emerald-600 dark:border-emerald-500'
                             : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-400'
-                        }`}
+                          }`}
                       >
                         {item}
                       </button>
@@ -1303,14 +1298,12 @@ export const ListPropertyScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, petsAllowed: !formData.petsAllowed })}
-                    className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out ${
-                      formData.petsAllowed ? 'bg-slate-950 dark:bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
-                    }`}
+                    className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out ${formData.petsAllowed ? 'bg-slate-950 dark:bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
+                      }`}
                   >
                     <div
-                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
-                        formData.petsAllowed ? 'translate-x-6' : 'translate-x-0'
-                      }`}
+                      className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${formData.petsAllowed ? 'translate-x-6' : 'translate-x-0'
+                        }`}
                     />
                   </button>
                 </div>
@@ -1349,14 +1342,12 @@ export const ListPropertyScreen: React.FC = () => {
                   onClick={() =>
                     setFormData({ ...formData, smokingAllowed: !formData.smokingAllowed })
                   }
-                  className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out ${
-                    formData.smokingAllowed ? 'bg-slate-950 dark:bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
-                  }`}
+                  className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out ${formData.smokingAllowed ? 'bg-slate-950 dark:bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
                 >
                   <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
-                      formData.smokingAllowed ? 'translate-x-6' : 'translate-x-0'
-                    }`}
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${formData.smokingAllowed ? 'translate-x-6' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -1379,14 +1370,12 @@ export const ListPropertyScreen: React.FC = () => {
                   onClick={() =>
                     setFormData({ ...formData, eventsAllowed: !formData.eventsAllowed })
                   }
-                  className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out ${
-                    formData.eventsAllowed ? 'bg-slate-950 dark:bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
-                  }`}
+                  className={`w-12 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out ${formData.eventsAllowed ? 'bg-slate-950 dark:bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
+                    }`}
                 >
                   <div
-                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
-                      formData.eventsAllowed ? 'translate-x-6' : 'translate-x-0'
-                    }`}
+                    className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${formData.eventsAllowed ? 'translate-x-6' : 'translate-x-0'
+                      }`}
                   />
                 </button>
               </div>
@@ -1605,7 +1594,7 @@ export const ListPropertyScreen: React.FC = () => {
 
                 <div className="flex items-center gap-3">
                   <img
-                    src={formData.coverPhoto}
+                    src={formData.coverPhotoPreview}
                     alt="Property Thumbnail"
                     className="w-16 h-16 rounded-2xl object-cover border border-slate-100 dark:border-slate-800"
                   />
@@ -1762,11 +1751,10 @@ export const ListPropertyScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => setCurrentScreen('dashboard')}
-            className={`flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer ${
-              activeBottomNav === 'dashboard'
+            className={`flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer ${activeBottomNav === 'dashboard'
                 ? 'text-slate-900 dark:text-white'
                 : 'text-slate-400 hover:text-slate-600'
-            }`}
+              }`}
           >
             <LayoutDashboard className="w-5 h-5" />
             <span>Dashboard</span>
@@ -1775,11 +1763,10 @@ export const ListPropertyScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveBottomNav('properties')}
-            className={`flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer ${
-              activeBottomNav === 'properties'
+            className={`flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer ${activeBottomNav === 'properties'
                 ? 'text-emerald-600 dark:text-emerald-400'
                 : 'text-slate-400 hover:text-slate-600'
-            }`}
+              }`}
           >
             <Building2 className="w-5 h-5" />
             <span>Properties</span>
@@ -1788,11 +1775,10 @@ export const ListPropertyScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => setCurrentScreen('dashboard')}
-            className={`flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer ${
-              activeBottomNav === 'requests'
+            className={`flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer ${activeBottomNav === 'requests'
                 ? 'text-slate-900 dark:text-white'
                 : 'text-slate-400 hover:text-slate-600'
-            }`}
+              }`}
           >
             <CheckCircle2 className="w-5 h-5" />
             <span>Requests</span>
@@ -1801,11 +1787,10 @@ export const ListPropertyScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => setCurrentScreen('dashboard')}
-            className={`flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer ${
-              activeBottomNav === 'messages'
+            className={`flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer ${activeBottomNav === 'messages'
                 ? 'text-slate-900 dark:text-white'
                 : 'text-slate-400 hover:text-slate-600'
-            }`}
+              }`}
           >
             <MessageSquare className="w-5 h-5" />
             <span>Messages</span>
@@ -1814,11 +1799,10 @@ export const ListPropertyScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => setCurrentScreen('landlord-profile')}
-            className={`flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer ${
-              activeBottomNav === 'menu'
+            className={`flex flex-col items-center gap-1 text-[10px] font-bold cursor-pointer ${activeBottomNav === 'menu'
                 ? 'text-slate-900 dark:text-white'
                 : 'text-slate-400 hover:text-slate-600'
-            }`}
+              }`}
           >
             <Menu className="w-5 h-5" />
             <span>Menu</span>

@@ -87,33 +87,30 @@ export const LandlordRequestsQueue: React.FC = () => {
             <button
               type="button"
               onClick={() => setFilter('all')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
-                filter === 'all'
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${filter === 'all'
                   ? 'bg-slate-950 text-white dark:bg-teal-500 dark:text-slate-950 shadow-sm'
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700'
-              }`}
+                }`}
             >
               All Requests
             </button>
             <button
               type="button"
               onClick={() => setFilter('high_rep')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
-                filter === 'high_rep'
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${filter === 'high_rep'
                   ? 'bg-slate-950 text-white dark:bg-teal-500 dark:text-slate-950 shadow-sm'
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700'
-              }`}
+                }`}
             >
               High Reputation
             </button>
             <button
               type="button"
               onClick={() => setFilter('urgent')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
-                filter === 'urgent'
+              className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${filter === 'urgent'
                   ? 'bg-slate-950 text-white dark:bg-teal-500 dark:text-slate-950 shadow-sm'
                   : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700'
-              }`}
+                }`}
             >
               Urgent
             </button>
@@ -288,7 +285,7 @@ export const LandlordRequestsQueue: React.FC = () => {
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                         <span>Application Approved</span>
                       </div>
-                    ) : request.status === 'rejected' || request.status === 'declined' ? (
+                    ) : request.status === 'rejected' ? (
                       <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs font-extrabold flex items-center justify-center gap-2">
                         <X className="w-4 h-4 text-rose-600" />
                         <span>Application Declined</span>

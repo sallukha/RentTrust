@@ -1,4 +1,6 @@
 import { ApiClientError } from '../types/api.types';
+import { Capacitor } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 
 const DEFAULT_API_BASE_URL = 'https://renttrust-drxz.onrender.com/api/v1';
 
@@ -6,18 +8,53 @@ export const API_BASE_URL =
   import.meta.env.VITE_API_URL?.replace(/\/$/, '') || DEFAULT_API_BASE_URL;
 
 export const AUTH_TOKEN_STORAGE_KEY = 'rental_token';
+let inMemoryAuthToken: string | null = null;
 
 export const getStoredAuthToken = (): string | null => {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  return inMemoryAuthToken || localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
 };
 
 export const setStoredAuthToken = (token: string): void => {
-  localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
+  inMemoryAuthToken = token;
+  if (Capacitor.isNativePlatform()) {
+    void Preferences.set({ key: AUTH_TOKEN_STORAGE_KEY, value: token });
+  } else {
+    localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
+  }
 };
 
 export const clearStoredAuthToken = (): void => {
-  localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+  inMemoryAuthToken = null;
+  if (Capacitor.isNativePlatform()) {
+    void Preferences.remove({ key: AUTH_TOKEN_STORAGE_KEY });
+  } else {
+    localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+  }
+};
+
+export const hydrateStoredAuthToken = async (): Promise<string | null> => {
+  if (typeof window === 'undefined') return null;
+
+  if (!Capacitor.isNativePlatform()) {
+    inMemoryAuthToken = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+    return inMemoryAuthToken;
+  }
+
+  const stored = await Preferences.get({ key: AUTH_TOKEN_STORAGE_KEY });
+  if (stored.value) {
+    inMemoryAuthToken = stored.value;
+    return stored.value;
+  }
+
+  const legacyToken = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  if (legacyToken) {
+    inMemoryAuthToken = legacyToken;
+    await Preferences.set({ key: AUTH_TOKEN_STORAGE_KEY, value: legacyToken });
+    localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+  }
+
+  return inMemoryAuthToken;
 };
 
 interface ApiRequestOptions extends RequestInit {

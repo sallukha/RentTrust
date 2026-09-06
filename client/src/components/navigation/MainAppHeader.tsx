@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { HeaderActions } from './HeaderActions';
 
 export const MainAppHeader: React.FC = () => {
-  const { currentScreen, setCurrentScreen, tenantAppStep, setTenantAppStep, conversations, activeConversationId } = useAuth();
+  const { currentScreen, goBack, canGoBack, tenantAppStep, setTenantAppStep, conversations, activeConversationId } = useAuth();
 
   const isChat = currentScreen === 'chat-conversation';
   const activeConv = conversations.find(c => c.id === activeConversationId);
@@ -47,37 +47,28 @@ export const MainAppHeader: React.FC = () => {
   const title = getScreenTitle();
   if (!title) return null;
 
-  const showBack = [
-    'property-detail',
-    'tenant-new-request',
-    'chat-conversation',
-    'landlord-requests-queue',
-    'landlord-applicant-dossier',
-    'lease-billing',
-    'login',
-    'register'
+  const showBack = canGoBack && ![
+    'logo-splash',
+    'welcome',
+    'tenant-home',
+    'tenant-profile',
+    'dashboard',
+    'landlord-profile',
+    'guest-home',
+    'guest-explore',
+    'chat-hub',
   ].includes(currentScreen);
 
+  /*
+   * Wizard steps are local state, so consume those before the screen stack.
+   * Every other screen uses the shared navigation history.
+   */
   const handleBack = () => {
-    if (currentScreen === 'property-detail') {
-      setCurrentScreen('guest-explore');
-    } else if (currentScreen === 'tenant-new-request') {
-      if (tenantAppStep > 0) {
-        setTenantAppStep(tenantAppStep - 1);
-      } else {
-        setCurrentScreen('tenant-home');
-      }
-    } else if (currentScreen === 'chat-conversation') {
-      setCurrentScreen('chat-hub');
-    } else if (currentScreen === 'landlord-applicant-dossier') {
-      setCurrentScreen('landlord-requests-queue');
-    } else if (currentScreen === 'landlord-requests-queue') {
-      setCurrentScreen('dashboard');
-    } else if (currentScreen === 'lease-billing') {
-      setCurrentScreen('dashboard');
-    } else if (currentScreen === 'login' || currentScreen === 'register') {
-      setCurrentScreen('welcome');
+    if (currentScreen === 'tenant-new-request' && tenantAppStep > 0) {
+      setTenantAppStep(tenantAppStep - 1);
+      return;
     }
+    goBack();
   };
 
   return (

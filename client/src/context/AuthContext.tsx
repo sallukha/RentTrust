@@ -20,10 +20,15 @@ import {
 } from '../types/workflow';
 import { chatApi, ChatConversation, ChatSocketMessage } from '../api/chat.api';
 import { BackendRentRequest } from '../api/rentRequests.api';
+import { clearStoredAuthToken, getStoredAuthToken, hydrateStoredAuthToken, setStoredAuthToken } from '../api/client';
+import { App as CapacitorApp } from '@capacitor/app';
+import { isNativeMobile, triggerHaptic } from '../utils/capacitor';
 
 interface AuthContextType {
   currentScreen: AppScreen;
   setCurrentScreen: (screen: AppScreen) => void;
+  goBack: () => void;
+  canGoBack: boolean;
 
   // Role switcher & Workflow state
   activeRole: ActiveUserRole;
@@ -73,6 +78,7 @@ interface AuthContextType {
   openChatForApprovedRequest: (request: BackendRentRequest) => Promise<void>;
   isChatLoading: boolean;
   chatError: string | null;
+  chatConnectionStatus: 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
   signRentalAgreement: () => void;
 
   // Landlord Workflow Actions
@@ -124,25 +130,111 @@ const initialLoginData: LoginFormData = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentScreen, setCurrentScreen] = useState<AppScreen>(() => {
+  const getInitialScreen = (): AppScreen => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('rental_current_screen') as AppScreen;
       if (saved) return saved;
 
       // If we have a token but no saved screen, go to dashboard/home
-      const token = localStorage.getItem('rental_token');
+      const token = getStoredAuthToken();
       if (token) {
         const role = localStorage.getItem('rental_active_role');
         return (role === 'landlord' || role === 'admin') ? 'dashboard' : 'tenant-home';
       }
     }
     return 'logo-splash';
-  });
+  };
 
-  // Helper to update screen and persist it
+  const [navigationStack, setNavigationStack] = useState<AppScreen[]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedStack = localStorage.getItem('rental_navigation_stack');
+      if (savedStack) {
+        try {
+          const parsed = JSON.parse(savedStack) as AppScreen[];
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {
+          // Fall back to the persisted screen below.
+        }
+      }
+    }
+    return [getInitialScreen()];
+  });
+  const currentScreen = navigationStack[navigationStack.length - 1] || 'logo-splash';
+  const navigationStackRef = useRef(navigationStack);
+  const browserHistoryInitializedRef = useRef(false);
+
+  useEffect(() => {
+    navigationStackRef.current = navigationStack;
+    localStorage.setItem('rental_navigation_stack', JSON.stringify(navigationStack));
+    localStorage.setItem('rental_current_screen', currentScreen);
+  }, [currentScreen, navigationStack]);
+
+  const setCurrentScreen = useCallback((screen: AppScreen) => {
+    void triggerHaptic();
+    setNavigationStack((previous) => {
+      if (previous[previous.length - 1] === screen) return previous;
+      if (typeof window !== 'undefined' && !isNativeMobile() && browserHistoryInitializedRef.current) {
+        window.history.pushState({ rentalScreen: screen }, '', window.location.href);
+      }
+      return [...previous, screen];
+    });
+  }, []);
+
+  const goBack = useCallback(() => {
+    void triggerHaptic();
+    if (typeof window !== 'undefined' && !isNativeMobile() && window.history.state?.rentalScreen) {
+      window.history.back();
+      return;
+    }
+
+    setNavigationStack((previous) => {
+      if (previous.length <= 1) return previous;
+      return previous.slice(0, -1);
+    });
+  }, []);
+
+  const canGoBack = navigationStack.length > 1;
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || isNativeMobile()) return;
+
+    window.history.replaceState({ rentalScreen: currentScreen }, '', window.location.href);
+    browserHistoryInitializedRef.current = true;
+
+    const handlePopState = (event: PopStateEvent) => {
+      const screen = event.state?.rentalScreen as AppScreen | undefined;
+      if (!screen) return;
+
+      setNavigationStack((previous) => {
+        const existingIndex = previous.lastIndexOf(screen);
+        if (existingIndex >= 0) return previous.slice(0, existingIndex + 1);
+        return [...previous, screen];
+      });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (!isNativeMobile()) return;
+
+    const listener = CapacitorApp.addListener('backButton', () => {
+      if (navigationStackRef.current.length > 1) {
+        goBack();
+      } else {
+        CapacitorApp.exitApp();
+      }
+    });
+
+    return () => {
+      listener.then((handle) => handle.remove());
+    };
+  }, [goBack]);
+
+  // Helper for flows that navigate while also persisting related state.
   const updateCurrentScreen = useCallback((screen: AppScreen) => {
     setCurrentScreen(screen);
-    localStorage.setItem('rental_current_screen', screen);
   }, []);
 
   // Guest Experience State
@@ -186,7 +278,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [authToken, setAuthToken] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('rental_token');
+      return getStoredAuthToken();
     }
     return null;
   });
@@ -205,8 +297,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [isGuestSession, setIsGuestSession] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
-    return !localStorage.getItem('rental_token');
+    return !getStoredAuthToken();
   });
+
+  useEffect(() => {
+    let mounted = true;
+    hydrateStoredAuthToken().then((token) => {
+      if (!mounted) return;
+      setAuthToken(token);
+      setIsGuestSession(!token);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const [loginData, setLoginData] = useState<LoginFormData>(() => {
     if (typeof window !== 'undefined') {
@@ -357,15 +461,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [chatConnectionStatus, setChatConnectionStatus] = useState<'connecting' | 'connected' | 'reconnecting' | 'disconnected'>('disconnected');
   const chatSocketRef = useRef<WebSocket | null>(null);
+  const socketRetryTimerRef = useRef<number | null>(null);
+  const socketRetryCountRef = useRef(0);
+  const [socketRetryKey, setSocketRetryKey] = useState(0);
   const conversationsRef = useRef<ConversationItem[]>([]);
+  const activeConversationIdRef = useRef(activeConversationId);
+  const activeRoleRef = useRef(activeRole);
   const defaultChatAvatar = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80';
+  const [appResumeKey, setAppResumeKey] = useState(0);
 
   const normalizeId = (value: unknown): string => String(value || '').trim().toLowerCase();
 
   useEffect(() => {
     conversationsRef.current = conversations;
   }, [conversations]);
+
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId;
+    activeRoleRef.current = activeRole;
+  }, [activeConversationId, activeRole]);
+
+  useEffect(() => {
+    if (!isNativeMobile()) return;
+
+    const listener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) setAppResumeKey((value) => value + 1);
+    });
+
+    return () => {
+      listener.then((handle) => handle.remove());
+    };
+  }, []);
 
   const mapConversation = useCallback((conversation: ChatConversation): ConversationItem => {
     const property = properties.find((item) => item.id === conversation.product_id);
@@ -468,23 +596,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       cancelled = true;
     };
-  }, [activeConversationId, activeRole, currentUser?.id]);
+  }, [activeConversationId, activeRole, appResumeKey, currentUser?.id]);
 
   useEffect(() => {
-    if (!currentUser?.id) return;
+    if (!currentUser?.id) {
+      setChatConnectionStatus('disconnected');
+      return;
+    }
 
+    let disposed = false;
+    if (chatSocketRef.current) {
+      chatSocketRef.current.close();
+      chatSocketRef.current = null;
+    }
+    setChatConnectionStatus(socketRetryKey > 0 ? 'reconnecting' : 'connecting');
     const socket = chatApi.openSocket(currentUser.id);
     chatSocketRef.current = socket;
 
+    socket.onopen = () => {
+      socketRetryCountRef.current = 0;
+      setChatConnectionStatus('connected');
+      setChatError(null);
+    };
+
     socket.onmessage = (event) => {
-      const payload = JSON.parse(event.data) as ChatSocketMessage;
+      let payload: ChatSocketMessage;
+      try {
+        payload = JSON.parse(event.data) as ChatSocketMessage;
+      } catch {
+        return;
+      }
       if (payload.type !== 'message' || payload.id === undefined || !payload.sender_id) return;
 
       const isMine = payload.sender_id === currentUser.id;
-      const sender: ChatMessage['sender'] = isMine ? (activeRole === 'landlord' ? 'landlord' : 'tenant') : (activeRole === 'landlord' ? 'tenant' : 'landlord');
+      const sender: ChatMessage['sender'] = isMine ? (activeRoleRef.current === 'landlord' ? 'landlord' : 'tenant') : (activeRoleRef.current === 'landlord' ? 'tenant' : 'landlord');
       const conversationId = String(payload.conversation_id);
 
-      if (conversationId === activeConversationId) {
+      if (conversationId === activeConversationIdRef.current) {
         setChatMessages((previous) => [...previous, {
           id: String(payload.id),
           sender,
@@ -504,20 +652,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...conversation,
         lastMessage: payload.message || conversation.lastMessage,
         timeAgo: 'Just now',
-        unread: !isMine && conversationId !== activeConversationId,
+        unread: !isMine && conversationId !== activeConversationIdRef.current,
       } : conversation));
     };
 
-    socket.onerror = () => setChatError('Chat connection failed');
+    socket.onerror = () => {
+      if (!disposed) {
+        setChatConnectionStatus('reconnecting');
+        setChatError('Chat connection lost. Reconnecting...');
+      }
+    };
     socket.onclose = () => {
       if (chatSocketRef.current === socket) chatSocketRef.current = null;
+      if (disposed || !currentUser?.id) {
+        if (!disposed) setChatConnectionStatus('disconnected');
+        return;
+      }
+
+      const retryDelay = Math.min(10000, 1000 * 2 ** socketRetryCountRef.current);
+      socketRetryCountRef.current += 1;
+      setChatConnectionStatus('reconnecting');
+      socketRetryTimerRef.current = window.setTimeout(() => {
+        socketRetryTimerRef.current = null;
+        setSocketRetryKey((value) => value + 1);
+      }, retryDelay);
     };
 
     return () => {
+      disposed = true;
+      if (socketRetryTimerRef.current !== null) {
+        window.clearTimeout(socketRetryTimerRef.current);
+        socketRetryTimerRef.current = null;
+      }
       socket.close();
       if (chatSocketRef.current === socket) chatSocketRef.current = null;
     };
-  }, [activeConversationId, activeRole, currentUser?.id]);
+  }, [appResumeKey, currentUser?.id, socketRetryKey]);
 
   const openChatForProperty = useCallback(async (property: PropertyListing) => {
     if (!currentUser?.id) throw new Error('Login required to start a chat');
@@ -912,7 +1082,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Always persist for reload stability
       localStorage.setItem('rental_user', JSON.stringify(res.user));
-      localStorage.setItem('rental_token', res.token);
+      setStoredAuthToken(res.token);
       localStorage.setItem('rental_portfolio', JSON.stringify(res.portfolioSummary));
 
       if (loginData.rememberDevice) {
@@ -962,7 +1132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsGuestSession(false);
 
       localStorage.setItem('rental_user', JSON.stringify(res.user));
-      localStorage.setItem('rental_token', res.token);
+      setStoredAuthToken(res.token);
       localStorage.setItem('rental_portfolio', JSON.stringify(res.portfolioSummary));
 
       if (returnToScreenAfterAuth) {
@@ -1003,7 +1173,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPortfolioSummary(null);
     setIsGuestSession(true);
     localStorage.removeItem('rental_user');
-    localStorage.removeItem('rental_token');
+    clearStoredAuthToken();
     localStorage.removeItem('rental_portfolio');
     updateCurrentScreen('guest-home');
     setGuestTab('home');
@@ -1050,22 +1220,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setPortfolioSummary(null);
     setIsGuestSession(true);
     localStorage.removeItem('rental_user');
-    localStorage.removeItem('rental_token');
+    clearStoredAuthToken();
     localStorage.removeItem('rental_portfolio');
     localStorage.removeItem('rental_current_screen');
+    localStorage.removeItem('rental_navigation_stack');
     localStorage.removeItem('rental_registration_form');
     localStorage.removeItem('rental_list_property_form');
     localStorage.removeItem('rental_list_property_step');
     localStorage.removeItem('rental_application');
     localStorage.removeItem('rental_tenant_app_step');
-    updateCurrentScreen('login');
-  }, [updateCurrentScreen]);
+    setNavigationStack(['login']);
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         currentScreen,
         setCurrentScreen: updateCurrentScreen,
+        goBack,
+        canGoBack,
         guestTab,
         setGuestTab,
         guestHomeVariant,
@@ -1129,6 +1302,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         openChatForApprovedRequest,
         isChatLoading,
         chatError,
+        chatConnectionStatus,
         signRentalAgreement,
         selectedRentRequest,
         setSelectedRentRequest: updateSelectedRentRequest,

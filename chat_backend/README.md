@@ -73,6 +73,17 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/chat_db
 
 Production में strong `JWT_SECRET` रखें और `DEBUG=false` करें।
 
+## Render deployment
+
+इस folder को अलग Render Web Service के रूप में deploy करें:
+
+1. Render में **New > Blueprint** चुनें और repository के root में मौजूद `render.yaml` चुनें, या Docker service बनाकर इस folder को root directory रखें।
+2. `JWT_SECRET` और `DATABASE_URL` को Render environment variables से configure करें। Blueprint managed Postgres का connection string अपने-आप जोड़ता है।
+3. Deploy के बाद `https://<chat-service>.onrender.com/health` खोलकर database health check करें।
+4. Client में `VITE_CHAT_API_BASE_URL=https://<chat-service>.onrender.com` और `VITE_CHAT_WS_BASE_URL=wss://<chat-service>.onrender.com` सेट करके नया client build deploy करें।
+
+Container startup पर `alembic upgrade head` अपने-आप चलता है, इसलिए participant metadata और attachment migrations भी production database में लागू हो जाती हैं। Render का local filesystem ephemeral होता है; uploaded attachments को redeploy के बाद बचाने के लिए paid persistent disk को `/app/uploads` पर mount करें या object storage जोड़ें।
+
 ## Local Python setup
 
 अगर Docker के बजाय locally API चलानी हो, तो PostgreSQL में `chat_db` database उपलब्ध होना चाहिए। फिर:

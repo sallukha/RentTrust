@@ -19,6 +19,7 @@ export const ChatHubView: React.FC = () => {
     activeRole,
     isChatLoading,
     chatError,
+    chatConnectionStatus,
   } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -68,8 +69,8 @@ export const ChatHubView: React.FC = () => {
                 type="button"
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${activeTab === tab.id
-                    ? 'bg-slate-950 text-white dark:bg-teal-500 dark:text-slate-950 shadow-sm'
-                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700'
+                  ? 'bg-slate-950 text-white dark:bg-teal-500 dark:text-slate-950 shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700'
                   }`}
               >
                 {tab.label}
@@ -80,6 +81,12 @@ export const ChatHubView: React.FC = () => {
 
         {/* Conversation List */}
         <div className="space-y-2.5">
+          {chatConnectionStatus !== 'connected' && (
+            <div className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-semibold text-amber-700">
+              {chatConnectionStatus === 'connecting' ? 'Connecting to chat...' : 'Reconnecting to chat...'}
+            </div>
+          )}
+
           {isChatLoading && (
             <div className="p-6 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
               Loading conversations...

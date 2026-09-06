@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { FilePicker } from '@capawesome/capacitor-file-picker';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft,
@@ -22,6 +23,16 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { chatApi } from '../../api/chat.api';
+import { isNativeMobile } from '../../utils/capacitor';
+
+const fileFromBase64 = (data: string, name: string, mimeType: string): File => {
+  const byteCharacters = atob(data);
+  const byteNumbers = new Array<number>(byteCharacters.length);
+  for (let index = 0; index < byteCharacters.length; index += 1) {
+    byteNumbers[index] = byteCharacters.charCodeAt(index);
+  }
+  return new File([new Uint8Array(byteNumbers)], name, { type: mimeType });
+};
 
 export const ConversationDetailView: React.FC = () => {
   const {
@@ -33,6 +44,7 @@ export const ConversationDetailView: React.FC = () => {
     activeRole,
     isChatLoading,
     chatError,
+    chatConnectionStatus,
   } = useAuth();
 
   const [inputMessage, setInputMessage] = useState('');
@@ -55,9 +67,7 @@ export const ConversationDetailView: React.FC = () => {
     setShowSignModal(false);
   };
 
-  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
+  const uploadSelectedFile = async (file: File) => {
     if (!file) return;
 
     setIsUploading(true);
@@ -69,6 +79,35 @@ export const ConversationDetailView: React.FC = () => {
       setUploadError(error instanceof Error ? error.message : 'Unable to upload document');
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (file) await uploadSelectedFile(file);
+  };
+
+  const handlePickFile = async () => {
+    if (!isNativeMobile()) {
+      fileInputRef.current?.click();
+      return;
+    }
+
+    setUploadError(null);
+    try {
+      const result = await FilePicker.pickFiles({
+        limit: 1,
+        readData: true,
+        types: ['application/pdf', 'image/*', 'text/plain'],
+      });
+      const pickedFile = result.files[0];
+      if (!pickedFile?.data) return;
+
+      await uploadSelectedFile(fileFromBase64(pickedFile.data, pickedFile.name, pickedFile.mimeType));
+    } catch (error) {
+      if (error instanceof Error && error.message.toLowerCase().includes('cancel')) return;
+      setUploadError(error instanceof Error ? error.message : 'Unable to select document');
     }
   };
 
@@ -192,6 +231,12 @@ export const ConversationDetailView: React.FC = () => {
 
       {/* Action Chips & Input Composer */}
       <div className="bg-white dark:bg-slate-900 border-t border-slate-200/80 dark:border-slate-800 p-3 space-y-2 max-w-lg mx-auto w-full">
+        {chatConnectionStatus !== 'connected' && (
+          <p className="text-center text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+            {chatConnectionStatus === 'connecting' ? 'Connecting to chat...' : 'Reconnecting to chat...'}
+          </p>
+        )}
+
         {/* Quick action chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
           {!rentalApplication.isLeaseSigned ? (
@@ -235,14 +280,14 @@ export const ConversationDetailView: React.FC = () => {
         <form onSubmit={handleSend} className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={handlePickFile}
             disabled={isUploading}
             className="p-2.5 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <Paperclip className="w-4 h-4" />
           </button>
 
-          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelected} />
+          <input ref={fileInputRef} type="file" accept="application/pdf,image/*,text/plain" className="hidden" onChange={handleFileSelected} />
 
           <input
             type="text"
