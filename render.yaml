@@ -2,6 +2,7 @@ services:
   - type: web
     name: renttrust-chat
     runtime: docker
+    plan: free
     rootDir: chat_backend
     dockerfilePath: ./Dockerfile
     dockerContext: .
@@ -26,5 +27,6 @@ services:
 
 databases:
   - name: renttrust-chat-db
+    plan: free
     databaseName: chat_db
     user: chat_user
