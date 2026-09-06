@@ -20,6 +20,7 @@ export const ChatHubView: React.FC = () => {
     isChatLoading,
     chatError,
     chatConnectionStatus,
+    isChatOffline,
   } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,6 +82,12 @@ export const ChatHubView: React.FC = () => {
 
         {/* Conversation List */}
         <div className="space-y-2.5">
+          {isChatOffline && (
+            <div className="px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-[11px] font-semibold text-rose-700">
+              You are offline. Chat will reconnect when internet is restored.
+            </div>
+          )}
+
           {chatConnectionStatus !== 'connected' && (
             <div className="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-semibold text-amber-700">
               {chatConnectionStatus === 'connecting' ? 'Connecting to chat...' : 'Reconnecting to chat...'}

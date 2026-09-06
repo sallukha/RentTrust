@@ -22,6 +22,7 @@ import { chatApi, ChatConversation, ChatSocketMessage } from '../api/chat.api';
 import { BackendRentRequest } from '../api/rentRequests.api';
 import { clearStoredAuthToken, getStoredAuthToken, hydrateStoredAuthToken, setStoredAuthToken } from '../api/client';
 import { App as CapacitorApp } from '@capacitor/app';
+import { Network } from '@capacitor/network';
 import { isNativeMobile, triggerHaptic } from '../utils/capacitor';
 
 interface AuthContextType {
@@ -79,6 +80,7 @@ interface AuthContextType {
   isChatLoading: boolean;
   chatError: string | null;
   chatConnectionStatus: 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
+  isChatOffline: boolean;
   signRentalAgreement: () => void;
 
   // Landlord Workflow Actions
@@ -462,6 +464,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [chatConnectionStatus, setChatConnectionStatus] = useState<'connecting' | 'connected' | 'reconnecting' | 'disconnected'>('disconnected');
+  const [isChatOffline, setIsChatOffline] = useState<boolean>(() => typeof navigator !== 'undefined' && !navigator.onLine);
   const chatSocketRef = useRef<WebSocket | null>(null);
   const socketRetryTimerRef = useRef<number | null>(null);
   const socketRetryCountRef = useRef(0);
@@ -482,6 +485,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     activeConversationIdRef.current = activeConversationId;
     activeRoleRef.current = activeRole;
   }, [activeConversationId, activeRole]);
+
+  useEffect(() => {
+    let mounted = true;
+    const updateNetworkStatus = (isConnected: boolean) => {
+      if (mounted) setIsChatOffline(!isConnected);
+    };
+
+    if (isNativeMobile()) {
+      Network.getStatus().then((status) => updateNetworkStatus(status.connected));
+      const listener = Network.addListener('networkStatusChange', (status) => {
+        updateNetworkStatus(status.connected);
+        if (status.connected) setSocketRetryKey((value) => value + 1);
+      });
+      return () => {
+        mounted = false;
+        listener.then((handle) => handle.remove());
+      };
+    }
+
+    const handleOnline = () => {
+      updateNetworkStatus(true);
+      setSocketRetryKey((value) => value + 1);
+    };
+    const handleOffline = () => updateNetworkStatus(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      mounted = false;
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isNativeMobile()) return;
@@ -916,6 +951,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sendChatMessage = useCallback((text: string, attachment?: any) => {
     if (!text.trim() && !attachment) return;
 
+    if (isChatOffline) {
+      setChatError('You are offline. Reconnect to send messages.');
+      return;
+    }
+
     const socket = chatSocketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN || !activeConversationId) {
       setChatError('Chat is still connecting. Please try again in a moment.');
@@ -929,7 +969,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       attachment_url: attachment?.url,
       attachment_name: attachment?.title,
     }));
-  }, [activeConversationId]);
+  }, [activeConversationId, isChatOffline]);
 
   const signRentalAgreement = useCallback(() => {
     try {
@@ -1303,6 +1343,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isChatLoading,
         chatError,
         chatConnectionStatus,
+        isChatOffline,
         signRentalAgreement,
         selectedRentRequest,
         setSelectedRentRequest: updateSelectedRentRequest,

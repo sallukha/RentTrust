@@ -45,6 +45,7 @@ export const ConversationDetailView: React.FC = () => {
     isChatLoading,
     chatError,
     chatConnectionStatus,
+    isChatOffline,
   } = useAuth();
 
   const [inputMessage, setInputMessage] = useState('');
@@ -89,6 +90,11 @@ export const ConversationDetailView: React.FC = () => {
   };
 
   const handlePickFile = async () => {
+    if (isChatOffline) {
+      setUploadError('You are offline. Reconnect before sharing a file.');
+      return;
+    }
+
     if (!isNativeMobile()) {
       fileInputRef.current?.click();
       return;
@@ -234,6 +240,11 @@ export const ConversationDetailView: React.FC = () => {
         {chatConnectionStatus !== 'connected' && (
           <p className="text-center text-[11px] font-semibold text-amber-700 dark:text-amber-300">
             {chatConnectionStatus === 'connecting' ? 'Connecting to chat...' : 'Reconnecting to chat...'}
+          </p>
+        )}
+        {isChatOffline && (
+          <p className="text-center text-[11px] font-semibold text-rose-700 dark:text-rose-300">
+            You are offline. Sending and uploads are paused.
           </p>
         )}
 
