@@ -82,7 +82,7 @@ Production में strong `JWT_SECRET` रखें और `DEBUG=false` क�
 3. Deploy के बाद `https://<chat-service>.onrender.com/health` खोलकर database health check करें।
 4. Client में `VITE_CHAT_API_BASE_URL=https://<chat-service>.onrender.com` और `VITE_CHAT_WS_BASE_URL=wss://<chat-service>.onrender.com` सेट करके नया client build deploy करें।
 
-Container startup पर `alembic upgrade head` अपने-आप चलता है, इसलिए participant metadata और attachment migrations भी production database में लागू हो जाती हैं। Render का local filesystem ephemeral होता है; uploaded attachments को redeploy के बाद बचाने के लिए paid persistent disk को `/app/uploads` पर mount करें या object storage जोड़ें।
+Container startup पर `alembic upgrade head` अपने-आप चलता है, इसलिए participant metadata और attachment migrations भी production database में लागू हो जाती हैं। Render का local filesystem ephemeral होता है; uploaded attachments को redeploy के बाद बचाने के लिए paid persistent disk को `/app/uploads` पर mount करें या object storage जोड़ें। Blueprint में Render-supported `connectionString` property इस्तेमाल की गई है।
 
 ## Local Python setup
 
