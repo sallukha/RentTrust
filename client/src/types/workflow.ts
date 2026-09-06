@@ -21,7 +21,7 @@ export interface RentalApplicationData {
   address: string;
   monthlyRent: string;
   rentNumeric: number;
-  
+
   // Applicant details
   applicantName: string;
   applicantAvatar: string;
@@ -29,13 +29,13 @@ export interface RentalApplicationData {
   applicantLocation: string;
   reputationScore: number;
   reputationBadge: string;
-  
+
   // Step 1: Rental details
   moveInDate: string;
   leaseDurationMonths: number;
   occupantsCount: number;
   purpose: RentalPurpose;
-  
+
   // Step 2: Identity
   documentType: DocumentTypeId;
   frontDocumentName?: string;
@@ -43,7 +43,7 @@ export interface RentalApplicationData {
   backDocumentName?: string;
   backDocumentUrl?: string;
   faceMatchCompleted: boolean;
-  
+
   // Step 3: Employment
   employmentType: EmploymentTypeId;
   companyName: string;
@@ -54,17 +54,17 @@ export interface RentalApplicationData {
   paystubUrl?: string;
   linkedinUrl?: string;
   portfolioUrl?: string;
-  
+
   // Final Review
   agreedToTerms: boolean;
   status: ApplicationStatus;
-  
+
   // Timestamps
   submittedAt?: string;
   viewedAt?: string;
   shortlistedAt?: string;
   decisionAt?: string;
-  
+
   // Lease & keys
   isLeaseSigned?: boolean;
   signedAt?: string;
@@ -80,7 +80,7 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
   attachment?: {
-    type: 'pdf_agreement' | 'image' | 'inspection';
+    type: 'pdf_agreement' | 'image' | 'inspection' | 'file';
     title: string;
     size: string;
     url?: string;

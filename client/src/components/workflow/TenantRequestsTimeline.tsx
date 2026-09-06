@@ -27,7 +27,7 @@ export const TenantRequestsTimeline: React.FC = () => {
     rentalApplication,
     setCurrentScreen,
     setGuestTab,
-    switchRole,
+    openChatForApprovedRequest,
   } = useAuth();
 
   const [showDossierModal, setShowDossierModal] = useState(false);
@@ -75,27 +75,27 @@ export const TenantRequestsTimeline: React.FC = () => {
   const requestTone =
     requestStatus === 'approved'
       ? {
-          shell: 'from-emerald-50 to-green-50/70 border-emerald-200 dark:from-emerald-950/40 dark:to-slate-800 dark:border-emerald-800',
-          icon: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700',
-          accent: 'text-emerald-700 dark:text-emerald-400',
-          chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
-          message: 'Your rental request has been approved and is ready for the next step.',
-        }
+        shell: 'from-emerald-50 to-green-50/70 border-emerald-200 dark:from-emerald-950/40 dark:to-slate-800 dark:border-emerald-800',
+        icon: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700',
+        accent: 'text-emerald-700 dark:text-emerald-400',
+        chip: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
+        message: 'Your rental request has been approved and is ready for the next step.',
+      }
       : requestStatus === 'rejected'
         ? {
-            shell: 'from-rose-50 to-red-50/70 border-rose-200 dark:from-rose-950/40 dark:to-slate-800 dark:border-rose-800',
-            icon: 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/60 dark:text-rose-300 dark:border-rose-700',
-            accent: 'text-rose-700 dark:text-rose-400',
-            chip: 'bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300',
-            message: 'Your request was not approved this time, but you can update your profile and reapply.',
-          }
+          shell: 'from-rose-50 to-red-50/70 border-rose-200 dark:from-rose-950/40 dark:to-slate-800 dark:border-rose-800',
+          icon: 'bg-rose-100 text-rose-700 border-rose-300 dark:bg-rose-900/60 dark:text-rose-300 dark:border-rose-700',
+          accent: 'text-rose-700 dark:text-rose-400',
+          chip: 'bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300',
+          message: 'Your request was not approved this time, but you can update your profile and reapply.',
+        }
         : {
-            shell: 'from-sky-50 to-blue-50/70 border-sky-200 dark:from-slate-850 dark:to-slate-800 dark:border-slate-700',
-            icon: 'bg-sky-100 text-sky-700 border-sky-300 dark:bg-teal-950/60 dark:text-teal-400 dark:border-teal-700',
-            accent: 'text-sky-700 dark:text-teal-400',
-            chip: 'bg-sky-100 text-sky-700 dark:bg-teal-950/60 dark:text-teal-300',
-            message: 'Landlord review is in progress for your most recent rental request.',
-          };
+          shell: 'from-sky-50 to-blue-50/70 border-sky-200 dark:from-slate-850 dark:to-slate-800 dark:border-slate-700',
+          icon: 'bg-sky-100 text-sky-700 border-sky-300 dark:bg-teal-950/60 dark:text-teal-400 dark:border-teal-700',
+          accent: 'text-sky-700 dark:text-teal-400',
+          chip: 'bg-sky-100 text-sky-700 dark:bg-teal-950/60 dark:text-teal-300',
+          message: 'Landlord review is in progress for your most recent rental request.',
+        };
 
   return (
     <div className="w-full max-w-md mx-auto space-y-5 pb-6">
@@ -131,25 +131,25 @@ export const TenantRequestsTimeline: React.FC = () => {
               const stepStates =
                 requestStatus === 'approved'
                   ? [
-                      { key: 'submitted', title: 'Submitted', detail: 'Your application was successfully encrypted and sent.', timestamp: latestRequest?.createdAt ? new Date(latestRequest.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Oct 12, 09:30 AM', state: 'complete', badge: 'VERIFIED' },
-                      { key: 'viewed', title: 'Viewed', detail: 'The landlord has opened your verified profile dossier.', timestamp: 'Oct 13, 02:15 PM', state: 'complete' },
-                      { key: 'shortlisted', title: 'Shortlisted', detail: 'You moved into the priority candidate pool and were considered for approval.', timestamp: 'Current stage', state: 'complete' },
-                      { key: 'decision', title: 'Decision', detail: 'Your request was approved and the next leasing steps are ready.', timestamp: 'Approved', state: 'success', badge: 'APPROVED' },
-                    ]
+                    { key: 'submitted', title: 'Submitted', detail: 'Your application was successfully encrypted and sent.', timestamp: latestRequest?.createdAt ? new Date(latestRequest.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Oct 12, 09:30 AM', state: 'complete', badge: 'VERIFIED' },
+                    { key: 'viewed', title: 'Viewed', detail: 'The landlord has opened your verified profile dossier.', timestamp: 'Oct 13, 02:15 PM', state: 'complete' },
+                    { key: 'shortlisted', title: 'Shortlisted', detail: 'You moved into the priority candidate pool and were considered for approval.', timestamp: 'Current stage', state: 'complete' },
+                    { key: 'decision', title: 'Decision', detail: 'Your request was approved and the next leasing steps are ready.', timestamp: 'Approved', state: 'success', badge: 'APPROVED' },
+                  ]
                   : requestStatus === 'rejected'
                     ? [
-                        { key: 'submitted', title: 'Submitted', detail: 'Your application was successfully encrypted and sent.', timestamp: latestRequest?.createdAt ? new Date(latestRequest.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Oct 12, 09:30 AM', state: 'complete', badge: 'VERIFIED' },
-                        { key: 'viewed', title: 'Viewed', detail: 'The landlord has opened your verified profile dossier.', timestamp: 'Oct 13, 02:15 PM', state: 'complete' },
-                        { key: 'shortlisted', title: 'Shortlisted', detail: 'Your profile was reviewed but the landlord requested another option.', timestamp: 'Review concluded', state: 'complete' },
-                        { key: 'decision', title: 'Decision', detail: 'Your request was declined. You can refresh your dossier and reapply.', timestamp: 'Rejected', state: 'error', badge: 'REJECTED' },
-                      ]
+                      { key: 'submitted', title: 'Submitted', detail: 'Your application was successfully encrypted and sent.', timestamp: latestRequest?.createdAt ? new Date(latestRequest.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Oct 12, 09:30 AM', state: 'complete', badge: 'VERIFIED' },
+                      { key: 'viewed', title: 'Viewed', detail: 'The landlord has opened your verified profile dossier.', timestamp: 'Oct 13, 02:15 PM', state: 'complete' },
+                      { key: 'shortlisted', title: 'Shortlisted', detail: 'Your profile was reviewed but the landlord requested another option.', timestamp: 'Review concluded', state: 'complete' },
+                      { key: 'decision', title: 'Decision', detail: 'Your request was declined. You can refresh your dossier and reapply.', timestamp: 'Rejected', state: 'error', badge: 'REJECTED' },
+                    ]
                     : [
-                        { key: 'submitted', title: 'Submitted', detail: 'Your application was successfully encrypted and sent.', timestamp: latestRequest?.createdAt ? new Date(latestRequest.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Oct 12, 09:30 AM', state: 'complete', badge: 'VERIFIED' },
-                        { key: 'viewed', title: 'Viewed', detail: 'The landlord has opened your verified profile dossier.', timestamp: 'Oct 13, 02:15 PM', state: 'complete' },
-                        { key: 'shortlisted', title: 'Shortlisted', detail: 'You are currently in the active review queue for a landlord decision.', timestamp: 'Current stage', state: 'current' },
-                        { key: 'final-review', title: 'Pending Final Review', detail: 'Background check and reference validation phase.', timestamp: 'Awaiting review', state: 'pending' },
-                        { key: 'decision', title: 'Decision', detail: 'Final approval or rejection outcome from the landlord.', timestamp: 'Pending', state: 'pending' },
-                      ];
+                      { key: 'submitted', title: 'Submitted', detail: 'Your application was successfully encrypted and sent.', timestamp: latestRequest?.createdAt ? new Date(latestRequest.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'Oct 12, 09:30 AM', state: 'complete', badge: 'VERIFIED' },
+                      { key: 'viewed', title: 'Viewed', detail: 'The landlord has opened your verified profile dossier.', timestamp: 'Oct 13, 02:15 PM', state: 'complete' },
+                      { key: 'shortlisted', title: 'Shortlisted', detail: 'You are currently in the active review queue for a landlord decision.', timestamp: 'Current stage', state: 'current' },
+                      { key: 'final-review', title: 'Pending Final Review', detail: 'Background check and reference validation phase.', timestamp: 'Awaiting review', state: 'pending' },
+                      { key: 'decision', title: 'Decision', detail: 'Final approval or rejection outcome from the landlord.', timestamp: 'Pending', state: 'pending' },
+                    ];
 
               return stepStates.map((step, index) => {
                 const isComplete = step.state === 'complete';
@@ -248,10 +248,11 @@ export const TenantRequestsTimeline: React.FC = () => {
                       <div className="flex items-center gap-2 pt-1">
                         <button
                           type="button"
-                          onClick={() => setCurrentScreen('tenant-profile')}
+                          onClick={() => latestRequest && openChatForApprovedRequest(latestRequest)}
                           className="py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold shadow-sm transition-all"
                         >
-                          Review next steps
+                          <MessageSquare className="w-3.5 h-3.5 inline mr-1" />
+                          Message landlord
                         </button>
                       </div>
                     )}
@@ -275,28 +276,6 @@ export const TenantRequestsTimeline: React.FC = () => {
                 );
               });
             })()}
-          </div>
-
-          {/* Quick Simulation Link to Landlord */}
-          <div className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-between">
-            <div className="space-y-0.5">
-              <p className="text-xs font-bold text-indigo-900 dark:text-indigo-200">
-                Want to test Landlord decision?
-              </p>
-              <p className="text-[11px] text-indigo-600 dark:text-indigo-400">
-                Switch to Marcus Sterling to review & approve this dossier.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                switchRole('landlord');
-                setCurrentScreen('landlord-requests-queue');
-              }}
-              className="py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-extrabold transition-all"
-            >
-              Open Queue &rarr;
-            </button>
           </div>
 
           {/* Trust-First Marketplace Security Card */}

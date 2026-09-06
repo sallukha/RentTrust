@@ -16,16 +16,14 @@ import {
   Send,
   X,
   Lock,
-  ArrowRight,
   User,
   LogOut,
-  Building2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 
 export const LandlordProfileScreen: React.FC = () => {
-  const { setCurrentScreen, openPropertyDetail, activeRole, switchRole, logout, currentUser, properties } = useAuth();
+  const { setCurrentScreen, openPropertyDetail, activeRole, logout, currentUser, properties } = useAuth();
   const [feedbackIndex, setFeedbackIndex] = useState(0);
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageText, setMessageText] = useState('');
@@ -366,34 +364,6 @@ export const LandlordProfileScreen: React.FC = () => {
               </div>
             ))}
           </div>
-        </div>
-
-        {/* Role Switcher Section (Production Role Switcher) */}
-        <div className="p-4 rounded-3xl bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-950/40 dark:to-emerald-950/40 border border-teal-200/80 dark:border-teal-800/60 space-y-3">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-teal-600 text-white flex items-center justify-center shadow-md">
-                <User className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                  Tenant & Renter Portal
-                </h3>
-                <p className="text-[11px] text-slate-600 dark:text-slate-300">
-                  Search properties, submit applications & verify escrow
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => switchRole('tenant')}
-            className="w-full py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <span>Switch to Tenant Mode</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
         </div>
 
         {/* Actions: Message & Sign Out */}

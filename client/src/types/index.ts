@@ -140,6 +140,7 @@ export interface PropertyListing {
   description: string;
   amenities: { id: string; name: string; icon: string }[];
   host: {
+    id?: string;
     name: string;
     avatar: string;
     reputation: string;

@@ -28,12 +28,13 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
-import { BackendInvoice, BackendLease } from '../api';
+import { BackendInvoice, BackendLease, BackendRentRequest } from '../api';
 
 type PendingRequestStatus = 'pending' | 'approved' | 'declined';
 
 type PendingRequest = {
   id: string;
+  request: BackendRentRequest;
   name: string;
   avatar: string;
   property: string;
@@ -46,7 +47,7 @@ type PendingRequest = {
 };
 
 export const DashboardScreen: React.FC = () => {
-  const { currentUser, setCurrentScreen } = useAuth();
+  const { currentUser, setCurrentScreen, ensureChatForApprovedRequest } = useAuth();
   const [selectedTimeRange, setSelectedTimeRange] = useState<'Last 6 Months' | 'Last 3 Months' | 'Year to Date'>('Last 6 Months');
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'properties' | 'chat' | 'settings'>('dashboard');
@@ -84,14 +85,16 @@ export const DashboardScreen: React.FC = () => {
         const mappedRequests: PendingRequest[] = (requestResult || []).map(req => {
           // Extract property title if it's an object, otherwise use a string
           let propTitle = 'Property';
-          if (req.propertyId && typeof req.propertyId === 'object' && 'title' in req.propertyId) {
-            propTitle = (req.propertyId as any).title;
+          const rawProperty = req.propertyId as any;
+          if (rawProperty && typeof rawProperty === 'object' && 'title' in rawProperty) {
+            propTitle = rawProperty.title;
           } else if (typeof req.propertyId === 'string') {
             propTitle = req.propertyId;
           }
 
           return {
             id: req.id || req._id || '',
+            request: req,
             name: req.occupation || 'Applicant',
             avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
             property: propTitle,
@@ -152,7 +155,9 @@ export const DashboardScreen: React.FC = () => {
 
   const handleApproveApplicant = async (id: string) => {
     try {
-      await apiService.updateLandlordRentRequestStatus(id, 'approved');
+      const approvedRequest = await apiService.updateLandlordRentRequestStatus(id, 'approved');
+      const request = pendingRequests.find((item) => item.id === id)?.request || approvedRequest;
+      await ensureChatForApprovedRequest(request);
       setPendingRequests((prev) =>
         prev.map((req) => (req.id === id ? { ...req, status: 'approved' } : req))
       );
@@ -321,9 +326,8 @@ export const DashboardScreen: React.FC = () => {
                         setSelectedTimeRange(opt);
                         setShowTimeDropdown(false);
                       }}
-                      className={`w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer ${
-                        selectedTimeRange === opt ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'
-                      }`}
+                      className={`w-full text-left px-3 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer ${selectedTimeRange === opt ? 'font-bold text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'
+                        }`}
                     >
                       {opt}
                     </button>

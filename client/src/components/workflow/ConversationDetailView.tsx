@@ -21,6 +21,7 @@ import {
 
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { chatApi } from '../../api/chat.api';
 
 export const ConversationDetailView: React.FC = () => {
   const {
@@ -30,12 +31,17 @@ export const ConversationDetailView: React.FC = () => {
     rentalApplication,
     signRentalAgreement,
     activeRole,
+    isChatLoading,
+    chatError,
   } = useAuth();
 
   const [inputMessage, setInputMessage] = useState('');
   const [showSignModal, setShowSignModal] = useState(false);
   const [signatureText, setSignatureText] = useState('Alex Chen');
   const [hasAgreedClauses, setHasAgreedClauses] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -49,6 +55,23 @@ export const ConversationDetailView: React.FC = () => {
     setShowSignModal(false);
   };
 
+  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadError(null);
+    try {
+      const uploaded = await chatApi.uploadFile(file);
+      sendChatMessage('', { type: 'file', title: uploaded.name, size: `${Math.ceil(file.size / 1024)} KB`, url: uploaded.url });
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : 'Unable to upload document');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-md mx-auto flex flex-col justify-between pb-6">
 
@@ -60,7 +83,25 @@ export const ConversationDetailView: React.FC = () => {
           </span>
         </div>
 
-        {chatMessages.map((msg) => {
+        {isChatLoading && (
+          <p className="text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+            Loading messages...
+          </p>
+        )}
+
+        {!isChatLoading && chatError && (
+          <p className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-center text-xs font-semibold text-rose-700">
+            {chatError}
+          </p>
+        )}
+
+        {!isChatLoading && !chatError && chatMessages.length === 0 && (
+          <p className="text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+            No messages yet. Send the first message below.
+          </p>
+        )}
+
+        {!isChatLoading && chatMessages.map((msg) => {
           const isMe =
             (activeRole === 'tenant' && msg.sender === 'tenant') ||
             (activeRole === 'landlord' && msg.sender === 'landlord');
@@ -94,16 +135,15 @@ export const ConversationDetailView: React.FC = () => {
               className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1`}
             >
               <div
-                className={`max-w-[85%] rounded-3xl p-3.5 space-y-2 text-xs leading-relaxed shadow-sm ${
-                  isMe
-                    ? 'bg-teal-600 text-white rounded-br-none'
-                    : 'bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-800 rounded-bl-none'
-                }`}
+                className={`max-w-[85%] rounded-3xl p-3.5 space-y-2 text-xs leading-relaxed shadow-sm ${isMe
+                  ? 'bg-teal-600 text-white rounded-br-none'
+                  : 'bg-white dark:bg-slate-850 text-slate-800 dark:text-slate-100 border border-slate-200/80 dark:border-slate-800 rounded-bl-none'
+                  }`}
               >
                 <p>{msg.text}</p>
 
                 {/* PDF Agreement Card (Screen 11) */}
-                {msg.attachment && msg.attachment.type === 'pdf_agreement' && (
+                {msg.attachment && (
                   <div className="p-3 rounded-2xl bg-slate-900 text-white space-y-2 border border-slate-700 shadow-md">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center">
@@ -113,14 +153,16 @@ export const ConversationDetailView: React.FC = () => {
                         <p className="text-xs font-bold truncate">
                           {msg.attachment.title}
                         </p>
-                        <p className="text-[10px] text-slate-400">
-                          {msg.attachment.size} &bull; Legally Binding DocuTrust
-                        </p>
+                        <p className="text-[10px] text-slate-400">{msg.attachment.size || 'Shared document'}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 pt-1">
-                      {rentalApplication.isLeaseSigned ? (
+                      {msg.attachment.url && msg.attachment.type === 'file' ? (
+                        <a href={msg.attachment.url} target="_blank" rel="noopener noreferrer" className="w-full py-2 rounded-xl bg-teal-500 text-slate-950 text-xs font-extrabold text-center">
+                          Open document
+                        </a>
+                      ) : rentalApplication.isLeaseSigned ? (
                         <div className="w-full py-2 rounded-xl bg-emerald-500 text-white text-xs font-extrabold flex items-center justify-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Signed & Executed ✓</span>
@@ -193,11 +235,14 @@ export const ConversationDetailView: React.FC = () => {
         <form onSubmit={handleSend} className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => sendChatMessage("Uploaded new verification document.", { type: 'pdf_agreement', title: 'Income_Proof_Oct2024.pdf', size: '1.8 MB' })}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
             className="p-2.5 rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <Paperclip className="w-4 h-4" />
           </button>
+
+          <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelected} />
 
           <input
             type="text"
@@ -215,6 +260,8 @@ export const ConversationDetailView: React.FC = () => {
             <Send className="w-4 h-4" />
           </button>
         </form>
+        {isUploading && <p className="text-[11px] text-slate-500">Uploading document...</p>}
+        {uploadError && <p className="text-[11px] text-rose-600">{uploadError}</p>}
       </div>
 
       {/* Review & Sign Agreement Modal */}

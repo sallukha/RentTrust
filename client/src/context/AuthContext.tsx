@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { apiService } from '../services/api';
 import {
@@ -18,11 +18,13 @@ import {
   ConversationItem,
   ApplicationStatus,
 } from '../types/workflow';
+import { chatApi, ChatConversation, ChatSocketMessage } from '../api/chat.api';
+import { BackendRentRequest } from '../api/rentRequests.api';
 
 interface AuthContextType {
   currentScreen: AppScreen;
   setCurrentScreen: (screen: AppScreen) => void;
-  
+
   // Role switcher & Workflow state
   activeRole: ActiveUserRole;
   setActiveRole: (role: ActiveUserRole) => void;
@@ -66,6 +68,11 @@ interface AuthContextType {
   conversations: ConversationItem[];
   activeConversationId: string;
   setActiveConversationId: (id: string) => void;
+  openChatForProperty: (property: PropertyListing) => Promise<void>;
+  ensureChatForApprovedRequest: (request: BackendRentRequest) => Promise<ChatConversation>;
+  openChatForApprovedRequest: (request: BackendRentRequest) => Promise<void>;
+  isChatLoading: boolean;
+  chatError: string | null;
   signRentalAgreement: () => void;
 
   // Landlord Workflow Actions
@@ -88,7 +95,7 @@ interface AuthContextType {
   pendingLoginOtp: string | null;
   handleSocialLogin: (provider: 'google' | 'apple') => Promise<boolean>;
   handleGuestLogin: () => Promise<boolean>;
-  
+
   // Forgot Password State
   isForgotPasswordOpen: boolean;
   forgotIdentifier: string;
@@ -137,7 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentScreen(screen);
     localStorage.setItem('rental_current_screen', screen);
   }, []);
-  
+
   // Guest Experience State
   const [guestTab, setGuestTab] = useState<GuestBottomTab>('home');
   const [guestHomeVariant, setGuestHomeVariant] = useState<'rental' | 'stays'>('rental');
@@ -345,77 +352,272 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [tenantAppStep]);
 
   // Chat & Messaging State
-  const [conversations, setConversations] = useState<ConversationItem[]>([
-    {
-      id: 'conv_marcus',
-      participantName: 'Marcus Sterling',
-      participantAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      participantScore: 942,
-      participantBadge: 'Verified Landlord',
-      propertyTitle: 'The Skylark Loft',
-      lastMessage: "I've sent the agreement for your review & signature.",
-      timeAgo: '2m ago',
-      unread: true,
-      category: 'All',
-    },
-    {
-      id: 'conv_sarah',
-      participantName: 'Sarah Jenkins',
-      participantAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
-      participantScore: 98,
-      participantBadge: 'Elite 98',
-      propertyTitle: 'Park Avenue Residence',
-      lastMessage: 'Maintenance request #242 resolved.',
-      timeAgo: '2h ago',
+  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string>('');
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const chatSocketRef = useRef<WebSocket | null>(null);
+  const conversationsRef = useRef<ConversationItem[]>([]);
+  const defaultChatAvatar = 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80';
+
+  const normalizeId = (value: unknown): string => String(value || '').trim().toLowerCase();
+
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
+
+  const mapConversation = useCallback((conversation: ChatConversation): ConversationItem => {
+    const property = properties.find((item) => item.id === conversation.product_id);
+    const currentId = normalizeId(currentUser?.id);
+    const isCurrentBuyer = currentId === normalizeId(conversation.buyer_id) || activeRole === 'tenant';
+    const isLandlordParticipant = isCurrentBuyer;
+    const participantName = isLandlordParticipant
+      ? conversation.seller_name || property?.host.name || 'Landlord'
+      : conversation.buyer_name || 'Tenant';
+    const participantAvatar = isLandlordParticipant
+      ? conversation.seller_avatar_url || property?.host.avatar || defaultChatAvatar
+      : conversation.buyer_avatar_url || defaultChatAvatar;
+
+    return {
+      id: String(conversation.id),
+      participantName,
+      participantAvatar,
+      participantScore: 0,
+      participantBadge: isLandlordParticipant ? 'Verified Landlord' : 'RentTrust member',
+      propertyTitle: property?.title || `Property ${conversation.product_id.slice(0, 8)}`,
+      lastMessage: 'Open conversation to view messages',
+      timeAgo: '',
       unread: false,
       category: 'Properties',
-    },
-    {
-      id: 'conv_alex_f',
-      participantName: 'Alex Fischer',
-      participantAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-      participantScore: 942,
-      participantBadge: 'Verified Host',
-      propertyTitle: 'Modernist Townhouse',
-      lastMessage: 'Looking forward to the viewing tomorrow at 2:30 PM!',
-      timeAgo: '1d ago',
-      unread: false,
-      category: 'All',
-    },
-  ]);
+    };
+  }, [activeRole, currentUser?.id, properties]);
 
-  const [activeConversationId, setActiveConversationId] = useState<string>('conv_marcus');
+  useEffect(() => {
+    let cancelled = false;
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: 'msg_1',
-      sender: 'landlord',
-      senderName: 'Marcus Sterling',
-      senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      text: "Hi Alex! I've reviewed your application and I'm happy to move forward.",
-      timestamp: '10:24 AM',
-    },
-    {
-      id: 'msg_2',
-      sender: 'tenant',
-      senderName: 'You',
-      text: "That's great news! Thank you, Marcus.",
-      timestamp: '10:26 AM',
-    },
-    {
-      id: 'msg_3',
-      sender: 'landlord',
-      senderName: 'Marcus Sterling',
-      senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-      text: "I've attached the draft agreement. Please take a look and let me know if you have any questions.",
-      timestamp: '10:28 AM',
-      attachment: {
-        type: 'pdf_agreement',
-        title: 'Rental_Agreement_v1.pdf',
-        size: '2.4 MB',
-      },
-    },
-  ]);
+    if (!currentUser?.id) {
+      setConversations([]);
+      setActiveConversationId('');
+      setChatMessages([]);
+      return;
+    }
+
+    setIsChatLoading(true);
+    setChatError(null);
+
+    chatApi.listConversations(currentUser.id)
+      .then((items) => {
+        if (cancelled) return;
+        const mapped = items.map(mapConversation);
+        setConversations(mapped);
+        setActiveConversationId((current) => current && mapped.some((item) => item.id === current) ? current : mapped[0]?.id || '');
+      })
+      .catch((error) => {
+        if (!cancelled) setChatError(error instanceof Error ? error.message : 'Unable to load conversations');
+      })
+      .finally(() => {
+        if (!cancelled) setIsChatLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentScreen, currentUser?.id, mapConversation]);
+
+  useEffect(() => {
+    if (!currentUser?.id || !activeConversationId) {
+      setChatMessages([]);
+      return;
+    }
+
+    let cancelled = false;
+    setIsChatLoading(true);
+    setChatError(null);
+
+    chatApi.getMessages(Number(activeConversationId))
+      .then((items) => {
+        if (cancelled) return;
+        setChatMessages(items.map((item) => ({
+          id: String(item.id),
+          sender: item.sender_id === currentUser.id ? (activeRole === 'landlord' ? 'landlord' : 'tenant') : (activeRole === 'landlord' ? 'tenant' : 'landlord'),
+          senderName: item.sender_id === currentUser.id ? 'You' : conversationsRef.current.find((conversation) => conversation.id === activeConversationId)?.participantName || 'Participant',
+          text: item.message,
+          timestamp: new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          attachment: item.attachment_url ? {
+            type: 'pdf_agreement',
+            title: item.attachment_name || 'Shared document',
+            size: '',
+            url: item.attachment_url,
+          } : undefined,
+        })));
+      })
+      .catch((error) => {
+        if (!cancelled) setChatError(error instanceof Error ? error.message : 'Unable to load messages');
+      })
+      .finally(() => {
+        if (!cancelled) setIsChatLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeConversationId, activeRole, currentUser?.id]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    const socket = chatApi.openSocket(currentUser.id);
+    chatSocketRef.current = socket;
+
+    socket.onmessage = (event) => {
+      const payload = JSON.parse(event.data) as ChatSocketMessage;
+      if (payload.type !== 'message' || payload.id === undefined || !payload.sender_id) return;
+
+      const isMine = payload.sender_id === currentUser.id;
+      const sender: ChatMessage['sender'] = isMine ? (activeRole === 'landlord' ? 'landlord' : 'tenant') : (activeRole === 'landlord' ? 'tenant' : 'landlord');
+      const conversationId = String(payload.conversation_id);
+
+      if (conversationId === activeConversationId) {
+        setChatMessages((previous) => [...previous, {
+          id: String(payload.id),
+          sender,
+          senderName: isMine ? 'You' : conversationsRef.current.find((item) => item.id === conversationId)?.participantName || 'Participant',
+          text: payload.message || '',
+          timestamp: payload.created_at ? new Date(payload.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now',
+          attachment: payload.attachment_url ? {
+            type: 'pdf_agreement',
+            title: payload.attachment_name || 'Shared document',
+            size: '',
+            url: payload.attachment_url,
+          } : undefined,
+        }]);
+      }
+
+      setConversations((previous) => previous.map((conversation) => conversation.id === conversationId ? {
+        ...conversation,
+        lastMessage: payload.message || conversation.lastMessage,
+        timeAgo: 'Just now',
+        unread: !isMine && conversationId !== activeConversationId,
+      } : conversation));
+    };
+
+    socket.onerror = () => setChatError('Chat connection failed');
+    socket.onclose = () => {
+      if (chatSocketRef.current === socket) chatSocketRef.current = null;
+    };
+
+    return () => {
+      socket.close();
+      if (chatSocketRef.current === socket) chatSocketRef.current = null;
+    };
+  }, [activeConversationId, activeRole, currentUser?.id]);
+
+  const openChatForProperty = useCallback(async (property: PropertyListing) => {
+    if (!currentUser?.id) throw new Error('Login required to start a chat');
+    if (activeRole !== 'tenant') throw new Error('Only tenants can start a property chat');
+    if (!property.host.id) throw new Error('This property has no linked landlord account');
+
+    const conversation = await chatApi.startConversation(property.id, currentUser.id, property.host.id, {
+      buyerName: currentUser.fullName,
+      buyerAvatarUrl: currentUser.avatarUrl || defaultChatAvatar,
+      sellerName: property.host.name,
+      sellerAvatarUrl: property.host.avatar || defaultChatAvatar,
+    });
+    setConversations((previous) => {
+      const mapped = mapConversation(conversation);
+      return previous.some((item) => item.id === mapped.id)
+        ? previous
+        : [mapped, ...previous];
+    });
+    setActiveConversationId(String(conversation.id));
+    updateCurrentScreen('chat-conversation');
+  }, [activeRole, currentUser?.id, mapConversation, updateCurrentScreen]);
+
+  const ensureChatForApprovedRequest = useCallback(async (request: BackendRentRequest) => {
+    if (!currentUser?.id) throw new Error('Login required to open this conversation');
+
+    const propertyId = typeof request.propertyId === 'object' && request.propertyId
+      ? String((request.propertyId as any)._id || (request.propertyId as any).id || '')
+      : String(request.propertyId || '');
+    const tenantId = typeof request.tenantId === 'object' && request.tenantId
+      ? String((request.tenantId as any)._id || (request.tenantId as any).id || '')
+      : String(request.tenantId || '');
+
+    if (!propertyId || !tenantId) {
+      throw new Error('Approved request is missing the property or tenant ID');
+    }
+
+    const requestTenant = request.tenantId as any;
+    const property = properties.find((item) => item.id === propertyId);
+    const landlordId = activeRole === 'landlord' ? currentUser.id : property?.host.id;
+    const buyerId = activeRole === 'tenant' ? currentUser.id : tenantId;
+    if (!landlordId || !buyerId) throw new Error('Approved request is missing a participant ID');
+
+    const conversation = await chatApi.startConversation(propertyId, buyerId, landlordId, {
+      buyerName: activeRole === 'tenant' ? currentUser.fullName : typeof requestTenant === 'object' ? requestTenant.name : undefined,
+      buyerAvatarUrl: activeRole === 'tenant' ? currentUser.avatarUrl || defaultChatAvatar : typeof requestTenant === 'object' ? requestTenant.avatarUrl || defaultChatAvatar : defaultChatAvatar,
+      sellerName: activeRole === 'landlord' ? currentUser.fullName : property?.host.name,
+      sellerAvatarUrl: activeRole === 'landlord' ? currentUser.avatarUrl || defaultChatAvatar : property?.host.avatar || defaultChatAvatar,
+    });
+    const mapped = mapConversation(conversation);
+    setConversations((previous) => previous.some((item) => item.id === mapped.id)
+      ? previous.map((item) => item.id === mapped.id ? { ...item, ...mapped } : item)
+      : [mapped, ...previous]);
+    return conversation;
+  }, [currentUser?.id, mapConversation]);
+
+  const openChatForApprovedRequest = useCallback(async (request: BackendRentRequest) => {
+    const conversation = await ensureChatForApprovedRequest(request);
+    setActiveConversationId(String(conversation.id));
+    updateCurrentScreen('chat-conversation');
+  }, [ensureChatForApprovedRequest, updateCurrentScreen]);
+
+  useEffect(() => {
+    if (currentScreen !== 'chat-hub' || !currentUser?.id || properties.length === 0) return;
+
+    let cancelled = false;
+    const syncApprovedConversations = async () => {
+      try {
+        const requests = activeRole === 'landlord'
+          ? await apiService.fetchLandlordRentRequests()
+          : await apiService.fetchMyRentRequests();
+
+        const conversationsToCreate = requests.filter((request) => request.status === 'approved');
+        const created = await Promise.all(conversationsToCreate.map(async (request) => {
+          const propertyId = String((request.propertyId as any)?._id || (request.propertyId as any)?.id || request.propertyId || '');
+          const property = properties.find((item) => item.id === propertyId);
+          const tenantId = String((request.tenantId as any)?._id || (request.tenantId as any)?.id || request.tenantId || (activeRole === 'tenant' ? currentUser.id : ''));
+          const landlordId = activeRole === 'landlord' ? currentUser.id : property?.host.id;
+
+          if (!propertyId || !tenantId || !landlordId) return null;
+          return chatApi.startConversation(propertyId, tenantId, landlordId, {
+            buyerName: activeRole === 'tenant' ? currentUser.fullName : (request.tenantId as any)?.name,
+            buyerAvatarUrl: activeRole === 'tenant' ? currentUser.avatarUrl || defaultChatAvatar : (request.tenantId as any)?.avatarUrl || defaultChatAvatar,
+            sellerName: activeRole === 'landlord' ? currentUser.fullName : property?.host.name,
+            sellerAvatarUrl: activeRole === 'landlord' ? currentUser.avatarUrl || defaultChatAvatar : property?.host.avatar || defaultChatAvatar,
+          });
+        }));
+
+        if (cancelled) return;
+        setConversations((previous) => {
+          const merged = new Map(previous.map((conversation) => [conversation.id, conversation]));
+          created.filter(Boolean).forEach((conversation) => {
+            const mapped = mapConversation(conversation as ChatConversation);
+            merged.set(mapped.id, { ...merged.get(mapped.id), ...mapped });
+          });
+          return Array.from(merged.values());
+        });
+      } catch (error) {
+        if (!cancelled) setChatError(error instanceof Error ? error.message : 'Unable to sync approved conversations');
+      }
+    };
+
+    syncApprovedConversations();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeRole, currentScreen, currentUser?.id, mapConversation, properties]);
 
   const switchRole = useCallback((newRole: ActiveUserRole) => {
     setActiveRole(newRole);
@@ -538,47 +740,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const sendChatMessage = useCallback((text: string, attachment?: any) => {
     if (!text.trim() && !attachment) return;
 
-    const newMsg: ChatMessage = {
-      id: `msg_${Date.now()}`,
-      sender: activeRole === 'landlord' ? 'landlord' : 'tenant',
-      senderName: activeRole === 'landlord' ? 'Marcus Sterling' : 'You',
-      text: text.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      attachment,
-    };
-
-    setChatMessages((prev) => [...prev, newMsg]);
-
-    // Update conversation snippet
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === activeConversationId
-          ? {
-              ...c,
-              lastMessage: text.trim() || (attachment ? attachment.title : 'Attachment'),
-              timeAgo: 'Just now',
-            }
-          : c
-      )
-    );
-
-    // Auto simulated response if tenant asks question
-    if (activeRole === 'tenant') {
-      setTimeout(() => {
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            id: `msg_auto_${Date.now()}`,
-            sender: 'landlord',
-            senderName: 'Marcus Sterling',
-            senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-            text: "Thanks for checking in! Everything is looking great on our end.",
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          },
-        ]);
-      }, 1500);
+    const socket = chatSocketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN || !activeConversationId) {
+      setChatError('Chat is still connecting. Please try again in a moment.');
+      return;
     }
-  }, [activeRole, activeConversationId]);
+
+    socket.send(JSON.stringify({
+      conversation_id: Number(activeConversationId),
+      message: text.trim() || `Attachment: ${attachment?.title || 'file'}`,
+      message_type: attachment ? 'file' : 'text',
+      attachment_url: attachment?.url,
+      attachment_name: attachment?.title,
+    }));
+  }, [activeConversationId]);
 
   const signRentalAgreement = useCallback(() => {
     try {
@@ -943,6 +1118,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         conversations,
         activeConversationId,
         setActiveConversationId,
+        openChatForProperty,
+        ensureChatForApprovedRequest,
+        openChatForApprovedRequest,
+        isChatLoading,
+        chatError,
         signRentalAgreement,
         selectedRentRequest,
         setSelectedRentRequest: updateSelectedRentRequest,

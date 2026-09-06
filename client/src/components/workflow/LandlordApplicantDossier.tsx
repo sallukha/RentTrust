@@ -27,6 +27,7 @@ export const LandlordApplicantDossier: React.FC = () => {
     selectedRentRequest,
     setCurrentScreen,
     switchRole,
+    ensureChatForApprovedRequest,
   } = useAuth();
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -58,7 +59,8 @@ export const LandlordApplicantDossier: React.FC = () => {
     const reqId = String(selectedRentRequest._id || selectedRentRequest.id);
     setIsProcessing(true);
     try {
-      await apiService.updateLandlordRentRequestStatus(reqId, 'approved');
+      const approvedRequest = await apiService.updateLandlordRentRequestStatus(reqId, 'approved');
+      await ensureChatForApprovedRequest(approvedRequest);
       setIsProcessing(false);
       setShowApprovalSuccess(true);
     } catch (err) {
@@ -295,7 +297,7 @@ export const LandlordApplicantDossier: React.FC = () => {
               </button>
             </div>
           </div>
-        ) : selectedRentRequest.status === 'rejected' || selectedRentRequest.status === 'declined' ? (
+        ) : selectedRentRequest.status === 'rejected' ? (
           <div className="space-y-2 text-center">
             <div className="p-3 rounded-2xl bg-rose-50 dark:bg-rose-950 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-bold">
               ✕ {tenantName}'s application has been declined.

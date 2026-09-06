@@ -5,7 +5,6 @@ import {
   ShieldCheck,
   Building,
   CheckCircle2,
-  Sparkles,
   ArrowRight,
   User,
   Plus,
@@ -18,6 +17,8 @@ export const ChatHubView: React.FC = () => {
     setActiveConversationId,
     setCurrentScreen,
     activeRole,
+    isChatLoading,
+    chatError,
   } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,11 +67,10 @@ export const ChatHubView: React.FC = () => {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  activeTab === tab.id
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${activeTab === tab.id
                     ? 'bg-slate-950 text-white dark:bg-teal-500 dark:text-slate-950 shadow-sm'
                     : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700'
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -80,7 +80,25 @@ export const ChatHubView: React.FC = () => {
 
         {/* Conversation List */}
         <div className="space-y-2.5">
-          {filteredConversations.map((conv) => (
+          {isChatLoading && (
+            <div className="p-6 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Loading conversations...
+            </div>
+          )}
+
+          {!isChatLoading && chatError && (
+            <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs font-semibold text-rose-700">
+              {chatError}
+            </div>
+          )}
+
+          {!isChatLoading && !chatError && filteredConversations.length === 0 && (
+            <div className="p-6 text-center text-xs font-semibold text-slate-500 dark:text-slate-400">
+              No conversations yet. Open a property and message the landlord to start one.
+            </div>
+          )}
+
+          {!isChatLoading && filteredConversations.map((conv) => (
             <div
               key={conv.id}
               onClick={() => {
@@ -130,18 +148,6 @@ export const ChatHubView: React.FC = () => {
             </div>
           ))}
 
-          {/* Footer Card (Screen 12) */}
-          <div className="p-4 rounded-2xl bg-teal-50/60 dark:bg-teal-950/30 border border-teal-100 dark:border-teal-900/50 text-center space-y-1 mt-4">
-            <div className="w-7 h-7 rounded-full bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 flex items-center justify-center mx-auto">
-              <Sparkles className="w-3.5 h-3.5" />
-            </div>
-            <p className="text-xs font-bold text-teal-900 dark:text-teal-200">
-              Your trust-based network is growing
-            </p>
-            <p className="text-[11px] text-teal-700 dark:text-teal-400">
-              3 verified landlord & host connections active
-            </p>
-          </div>
         </div>
       </div>
     </div>

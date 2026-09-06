@@ -5,8 +5,6 @@ import {
   Star,
   Award,
   CheckCircle2,
-  Building2,
-  ArrowRight,
   CreditCard,
   FileCheck2,
   LogOut,
@@ -24,7 +22,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 export const TenantProfileScreen: React.FC = () => {
-  const { setCurrentScreen, switchRole, logout, currentUser, rentalApplication } = useAuth();
+  const { setCurrentScreen, logout, currentUser, rentalApplication } = useAuth();
   const [showShareToast, setShowShareToast] = useState(false);
   const [showPassportModal, setShowPassportModal] = useState(false);
 
@@ -155,34 +153,6 @@ export const TenantProfileScreen: React.FC = () => {
             </span>
           </div>
         </div>
-      </div>
-
-      {/* Role Switcher Section (Production Role Switcher) */}
-      <div className="p-4 rounded-3xl bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/40 border border-indigo-200/80 dark:border-indigo-800/60 space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">
-                Landlord & Property Owner Portal
-              </h3>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300">
-                Manage units, review applicants & track cashflow
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => switchRole('landlord')}
-          className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-        >
-          <span>Switch to Landlord Operations</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
       </div>
 
       {/* Preferences & Credentials Menu */}

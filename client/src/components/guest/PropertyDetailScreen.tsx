@@ -23,6 +23,7 @@ import {
   Info,
   Calendar,
   X,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { PROPERTY_REVIEWS } from '../../data/properties';
@@ -38,6 +39,7 @@ export const PropertyDetailScreen: React.FC = () => {
     isGuestSession,
     startApplicationForProperty,
     properties,
+    openChatForProperty,
   } = useAuth();
 
   const property = selectedProperty || properties[0] || null;
@@ -50,6 +52,7 @@ export const PropertyDetailScreen: React.FC = () => {
   const [isHostModalOpen, setIsHostModalOpen] = useState<boolean>(false);
   const [isPriceBreakdownOpen, setIsPriceBreakdownOpen] = useState<boolean>(false);
   const [isShareToastOpen, setIsShareToastOpen] = useState<boolean>(false);
+  const [chatStartError, setChatStartError] = useState<string | null>(null);
 
   const handleStartRequest = () => {
     startApplicationForProperty(property);
@@ -59,6 +62,16 @@ export const PropertyDetailScreen: React.FC = () => {
     navigator.clipboard?.writeText(window.location.href);
     setIsShareToastOpen(true);
     setTimeout(() => setIsShareToastOpen(false), 2500);
+  };
+
+  const handleStartChat = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setChatStartError(null);
+    try {
+      await openChatForProperty(property);
+    } catch (error) {
+      setChatStartError(error instanceof Error ? error.message : 'Unable to start chat');
+    }
   };
 
   return (
@@ -82,9 +95,8 @@ export const PropertyDetailScreen: React.FC = () => {
             aria-label="Save"
           >
             <Heart
-              className={`w-5 h-5 ${
-                isSaved ? 'fill-red-500 text-red-500' : 'text-slate-800 dark:text-white'
-              }`}
+              className={`w-5 h-5 ${isSaved ? 'fill-red-500 text-red-500' : 'text-slate-800 dark:text-white'
+                }`}
             />
           </button>
 
@@ -188,12 +200,19 @@ export const PropertyDetailScreen: React.FC = () => {
 
         <button
           type="button"
-          className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1"
+          onClick={handleStartChat}
+          className="text-xs font-bold text-teal-700 dark:text-teal-300 flex items-center gap-1"
         >
-          <span>View</span>
-          <ChevronRight className="w-4 h-4 text-slate-400" />
+          <MessageSquare className="w-4 h-4" />
+          <span>Message</span>
         </button>
       </div>
+
+      {chatStartError && (
+        <p className="mx-1 text-xs font-semibold text-rose-600 dark:text-rose-400">
+          {chatStartError}
+        </p>
+      )}
 
       {/* About this space section matching Image 4 */}
       <div className="mx-1 space-y-2">
