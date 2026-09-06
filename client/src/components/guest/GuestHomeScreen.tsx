@@ -16,7 +16,6 @@ import {
   Grid,
   Sparkles,
   ArrowRight,
-  LogIn,
   CheckCircle,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -79,11 +78,10 @@ export const GuestHomeScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setGuestHomeVariant('rental')}
-          className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-            guestHomeVariant === 'rental'
+          className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${guestHomeVariant === 'rental'
               ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+            }`}
         >
           <Building className="w-3.5 h-3.5" />
           <span>Long-Term Rentals</span>
@@ -91,11 +89,10 @@ export const GuestHomeScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setGuestHomeVariant('stays')}
-          className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-            guestHomeVariant === 'stays'
+          className={`flex-1 py-1.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${guestHomeVariant === 'stays'
               ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+            }`}
         >
           <Castle className="w-3.5 h-3.5" />
           <span>Curated Stays</span>
@@ -134,11 +131,10 @@ export const GuestHomeScreen: React.FC = () => {
         <button
           type="button"
           onClick={() => setSelectedCategory('All')}
-          className={`flex flex-col items-center justify-center min-w-[62px] py-1.5 px-2 rounded-2xl transition-all ${
-            selectedCategory === 'All'
+          className={`flex flex-col items-center justify-center min-w-[62px] py-1.5 px-2 rounded-2xl transition-all ${selectedCategory === 'All'
               ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold shadow-xs'
               : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 font-medium'
-          }`}
+            }`}
         >
           <Sparkles className="w-4 h-4 mb-0.5" />
           <span className="text-[10px] whitespace-nowrap">All Homes</span>
@@ -152,11 +148,10 @@ export const GuestHomeScreen: React.FC = () => {
               key={cat.id}
               type="button"
               onClick={() => setSelectedCategory(cat.id)}
-              className={`flex flex-col items-center justify-center min-w-[70px] py-1.5 px-2 rounded-2xl transition-all ${
-                isActive
+              className={`flex flex-col items-center justify-center min-w-[70px] py-1.5 px-2 rounded-2xl transition-all ${isActive
                   ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold shadow-xs'
                   : 'bg-slate-100/80 dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-slate-200/70 font-medium'
-              }`}
+                }`}
             >
               <Icon className="w-4 h-4 mb-0.5" />
               <span className="text-[10px] whitespace-nowrap">{cat.label}</span>
@@ -238,15 +233,14 @@ export const GuestHomeScreen: React.FC = () => {
                 {property.badgeLabel && (
                   <div className="absolute bottom-3 left-3 z-10">
                     <span
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold shadow-md backdrop-blur-md ${
-                        property.badgeType === 'elite-landlord'
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold shadow-md backdrop-blur-md ${property.badgeType === 'elite-landlord'
                           ? 'bg-emerald-600/90 text-white'
                           : property.badgeType === 'trusted-landlord'
-                          ? 'bg-teal-600/90 text-white'
-                          : property.badgeType === 'rare-find'
-                          ? 'bg-teal-500/90 text-white'
-                          : 'bg-emerald-500/90 text-white'
-                      }`}
+                            ? 'bg-teal-600/90 text-white'
+                            : property.badgeType === 'rare-find'
+                              ? 'bg-teal-500/90 text-white'
+                              : 'bg-emerald-500/90 text-white'
+                        }`}
                     >
                       <ShieldCheck className="w-3.5 h-3.5" />
                       <span>{property.badgeLabel}</span>
@@ -263,9 +257,8 @@ export const GuestHomeScreen: React.FC = () => {
                   aria-label="Save to favorites"
                 >
                   <Heart
-                    className={`w-4 h-4 transition-colors ${
-                      isSaved ? 'fill-red-500 text-red-500' : 'text-white'
-                    }`}
+                    className={`w-4 h-4 transition-colors ${isSaved ? 'fill-red-500 text-red-500' : 'text-white'
+                      }`}
                   />
                 </button>
               </div>
@@ -345,24 +338,6 @@ export const GuestHomeScreen: React.FC = () => {
           >
             <Compass className="w-3.5 h-3.5" />
             <span>Keep exploring</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Sticky Bottom Personalized Recommendations Banner matching Image 2 */}
-      <div className="sticky bottom-14 z-20 pt-2">
-        <div className="p-3 px-4 rounded-2xl bg-[#0e1628] text-white shadow-xl flex items-center justify-between gap-3 border border-slate-800">
-          <div>
-            <p className="text-xs font-bold text-white leading-tight">Ready for more?</p>
-            <p className="text-[11px] text-slate-300">Get personalized recommendations</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setCurrentScreen('login')}
-            className="py-2 px-4 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-extrabold text-xs shadow-sm flex items-center gap-1.5 transition-all flex-shrink-0"
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>Log In</span>
           </button>
         </div>
       </div>

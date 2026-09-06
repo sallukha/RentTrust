@@ -191,67 +191,39 @@ export const LandlordProfileScreen: React.FC = () => {
               onClick={() => setCurrentScreen('guest-home')}
               className="text-xs sm:text-sm font-semibold text-[#0d9488] dark:text-teal-400 hover:underline cursor-pointer"
             >
-              View all (3)
+              View all ({properties.length})
             </button>
           </div>
 
-          {/* 2 Horizontal Listing Cards */}
+          {/* Two database-backed listing previews */}
           <div className="grid grid-cols-2 gap-3">
-            {/* Card 1: The Skylark Loft */}
-            <div
-              onClick={() => {
-                if (properties[0]) openPropertyDetail(properties[0]);
-              }}
-              className="rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs cursor-pointer group hover:border-slate-300 dark:hover:border-slate-700 transition-all"
-            >
-              <div className="relative h-24 sm:h-28 w-full overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=500&auto=format&fit=crop&q=80"
-                  alt="The Skylark Loft"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-white/95 dark:bg-slate-900/90 text-slate-950 dark:text-white text-[11px] font-black shadow-xs">
-                  ₹24,500
-                </span>
+            {properties.slice(0, 2).map((property) => (
+              <div
+                key={property.id}
+                onClick={() => openPropertyDetail(property)}
+                className="rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs cursor-pointer group hover:border-slate-300 dark:hover:border-slate-700 transition-all"
+              >
+                <div className="relative h-24 sm:h-28 w-full overflow-hidden">
+                  <img
+                    src={property.images[0]}
+                    alt={property.title}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-white/95 dark:bg-slate-900/90 text-slate-950 dark:text-white text-[11px] font-black shadow-xs">
+                    {property.price}
+                  </span>
+                </div>
+                <div className="p-2.5">
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                    {property.title}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    {property.location}
+                  </p>
+                </div>
               </div>
-              <div className="p-2.5">
-                <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                  The Skylark Loft
-                </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  Downtown, NY
-                </p>
-              </div>
-            </div>
-
-            {/* Card 2: Hudson Garden Ste. */}
-            <div
-              onClick={() => {
-                if (properties[1] || properties[0]) openPropertyDetail(properties[1] || properties[0]);
-              }}
-              className="rounded-2xl overflow-hidden border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs cursor-pointer group hover:border-slate-300 dark:hover:border-slate-700 transition-all"
-            >
-              <div className="relative h-24 sm:h-28 w-full overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=500&auto=format&fit=crop&q=80"
-                  alt="Hudson Garden Ste."
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-white/95 dark:bg-slate-900/90 text-slate-950 dark:text-white text-[11px] font-black shadow-xs">
-                  ₹31,000
-                </span>
-              </div>
-              <div className="p-2.5">
-                <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
-                  Hudson Garden Ste.
-                </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  Greenwich, NY
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
 

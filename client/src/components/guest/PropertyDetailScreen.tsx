@@ -37,6 +37,7 @@ export const PropertyDetailScreen: React.FC = () => {
     setReturnToScreenAfterAuth,
     currentUser,
     isGuestSession,
+    activeRole,
     startApplicationForProperty,
     properties,
     openChatForProperty,
@@ -75,7 +76,7 @@ export const PropertyDetailScreen: React.FC = () => {
   };
 
   return (
-    <div id="property-details-screen" className="w-full space-y-4 pb-20 relative">
+    <div id="property-details-screen" className="w-full space-y-4 pb-28 relative">
       {/* Hero Image Gallery with 1/12 Photo Counter matching Image 4 */}
       <div className="relative w-full aspect-[4/3] rounded-3xl overflow-hidden shadow-lg bg-slate-900">
         <img
@@ -300,30 +301,34 @@ export const PropertyDetailScreen: React.FC = () => {
       {/* Fixed Bottom Action Bar matching Image 4 */}
       <div
         id="property-bottom-action-bar"
-        className="sticky bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-4 px-4 sm:px-5 flex items-center justify-between shadow-2xl"
+        className="fixed inset-x-0 bottom-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 shadow-2xl"
       >
-        <div>
-          <p className="text-base font-black text-slate-900 dark:text-white leading-tight">
-            {property.price}
-          </p>
-          <button
-            type="button"
-            onClick={() => setIsPriceBreakdownOpen(true)}
-            className="text-xs font-semibold text-slate-600 dark:text-slate-300 underline hover:text-teal-600"
-          >
-            Total: ₹14,200
-          </button>
-        </div>
+        <div className="w-full max-w-md mx-auto px-4 sm:px-5 py-3 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-base font-black text-slate-900 dark:text-white leading-tight">
+              {property.price}
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsPriceBreakdownOpen(true)}
+              className="text-xs font-semibold text-slate-600 dark:text-slate-300 underline hover:text-teal-600"
+            >
+              Total: ₹14,200
+            </button>
+          </div>
 
-        <button
-          type="button"
-          id="sign-in-to-request-btn"
-          onClick={handleStartRequest}
-          className="py-3 px-5 rounded-2xl bg-[#0e1628] dark:bg-teal-600 hover:bg-[#16233f] dark:hover:bg-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2"
-        >
-          <ShieldCheck className="w-4 h-4 text-teal-400" />
-          <span>Start Rental Request</span>
-        </button>
+          {activeRole !== 'landlord' && (
+            <button
+              type="button"
+              id="sign-in-to-request-btn"
+              onClick={handleStartRequest}
+              className="py-3 px-5 rounded-2xl bg-[#0e1628] dark:bg-teal-600 hover:bg-[#16233f] dark:hover:bg-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2"
+            >
+              <ShieldCheck className="w-4 h-4 text-teal-400" />
+              <span>Start Rental Request</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Price Breakdown Modal */}
@@ -376,14 +381,16 @@ export const PropertyDetailScreen: React.FC = () => {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={handleStartRequest}
-                className="w-full py-3 rounded-xl bg-[#0e1628] dark:bg-teal-600 text-white font-bold text-xs flex items-center justify-center gap-2"
-              >
-                <ShieldCheck className="w-4 h-4 text-teal-400" />
-                <span>Start Rental Request</span>
-              </button>
+              {activeRole !== 'landlord' && (
+                <button
+                  type="button"
+                  onClick={handleStartRequest}
+                  className="w-full py-3 rounded-xl bg-[#0e1628] dark:bg-teal-600 text-white font-bold text-xs flex items-center justify-center gap-2"
+                >
+                  <ShieldCheck className="w-4 h-4 text-teal-400" />
+                  <span>Start Rental Request</span>
+                </button>
+              )}
             </motion.div>
           </div>
         )}
